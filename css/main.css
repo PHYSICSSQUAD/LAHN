@@ -41,6 +41,10 @@ img { max-width: 100%; }
 
 .site-frame { min-height: 100vh; overflow: clip; }
 .app-root { min-height: 100vh; display: flex; flex-direction: column; }
+.site-banner { position: relative; z-index: 31; color: #fff; background: linear-gradient(90deg, var(--green-dark), var(--green) 55%, #5bb59c); box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .22); }
+.site-banner-inner { width: min(1180px, calc(100% - 56px)); min-height: 42px; margin: 0 auto; padding-block: 8px; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 16px; font-weight: 800; line-height: 1.45; letter-spacing: .1px; text-align: center; text-shadow: 0 1px 1px rgba(31, 74, 64, .22); }
+.site-banner-text { text-wrap: balance; }
+.site-banner-mark { flex: 0 0 auto; color: var(--yellow); font-size: 17px; line-height: 1; }
 .site-header { position: sticky; inset-block-start: 0; z-index: 30; background: rgba(251, 248, 241, .91); border-bottom: 1px solid rgba(228, 231, 221, .75); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); }
 .header-inner { width: min(1180px, calc(100% - 56px)); min-height: 82px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 28px; }
 .brand { display: inline-flex; align-items: center; gap: 11px; flex: 0 0 auto; }
@@ -542,6 +546,8 @@ img { max-width: 100%; }
 @media (max-width: 760px) {
   body { font-size: 16px; }
   .header-inner, .main-content, .footer-inner { width: calc(100% - 32px); }
+  .site-banner-inner { width: calc(100% - 32px); min-height: 38px; padding-block: 7px; gap: 9px; font-size: 14px; }
+  .site-banner-mark { font-size: 15px; }
   .header-inner { min-height: auto; padding-block: 12px 10px; display: grid; grid-template-columns: 1fr auto; gap: 8px 10px; }
   .brand { gap: 8px; }
   .brand-symbol { width: 39px; height: 39px; border-radius: 13px; font-size: 22px; }
@@ -722,6 +728,7 @@ img { max-width: 100%; }
 
 @media (max-width: 420px) {
   .header-inner, .main-content, .footer-inner { width: calc(100% - 24px); }
+  .site-banner-inner { width: calc(100% - 24px); gap: 7px; font-size: 13px; }
   .parents-link { padding-inline: 8px; }
   .parents-sparkle { display: none; }
   .nav-link { font-size: 11px; }

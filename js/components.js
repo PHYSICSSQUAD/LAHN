@@ -1,4 +1,11 @@
+import { APP_CONFIG } from './config.js';
 import { escapeHTML, formatTime } from './utils.js';
+
+export function renderSiteBanner() {
+  const text = String(APP_CONFIG.siteBanner || '').trim();
+  if (!text) return '';
+  return `<div class="site-banner" data-site-banner><p class="site-banner-inner"><span class="site-banner-mark" aria-hidden="true">✝</span><span class="site-banner-text">${escapeHTML(text)}</span><span class="site-banner-mark" aria-hidden="true">✝</span></p></div>`;
+}
 
 export function renderHeader(active = '') {
   const links = [
@@ -6,7 +13,7 @@ export function renderHeader(active = '') {
     { id: 'liturgy', href: '#/liturgy', icon: '⛪', label: 'الطقس' },
     { id: 'coptic', href: '#/coptic', icon: 'Ⲁⲃⲅ', label: 'القبطي' },
   ];
-  return `
+  return `${renderSiteBanner()}
     <header class="site-header">
       <div class="header-inner">
         <a class="brand" href="#/home" aria-label="لحن — الصفحة الرئيسية">
