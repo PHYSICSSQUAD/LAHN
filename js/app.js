@@ -58,7 +58,7 @@ function renderHome(data) {
           <div class="hero-sky-orb hero-orb-one"></div><div class="hero-sky-orb hero-orb-two"></div>
           <span class="hero-doodle doodle-star" aria-hidden="true">✦</span><span class="hero-doodle doodle-note" aria-hidden="true">♪</span><span class="hero-doodle doodle-cloud" aria-hidden="true">☁</span>
           <div class="hero-art-ring"></div>
-          <img class="hero-mascot" src="/assets/images/mascot.png" alt="شمس لطيفة تقرأ كتابًا" fetchpriority="high" />
+          <img class="hero-mascot" src="assets/images/mascot.png" alt="شمس لطيفة تقرأ كتابًا" fetchpriority="high" />
           <div class="hero-sticker sticker-song"><span aria-hidden="true">🎶</span><span>نرنّم سوا!</span></div>
           <div class="hero-sticker sticker-heart"><span aria-hidden="true">💛</span><span>أنت بطل!</span></div>
         </div>
