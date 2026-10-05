@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 420" role="img" aria-labelledby="title desc">
+  <title id="title">سمكة قبطية مرحة</title>
+  <desc id="desc">سمكة برتقالية وبيضاء تسبح في الماء</desc>
+  <defs>
+    <linearGradient id="orange" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#ffc36c"/><stop offset=".47" stop-color="#fa8847"/><stop offset="1" stop-color="#e86639"/></linearGradient>
+    <linearGradient id="fin" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9adcc9"/><stop offset="1" stop-color="#48a997"/></linearGradient>
+    <linearGradient id="stripe" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fffef4"/><stop offset="1" stop-color="#e8f1e6"/></linearGradient>
+    <filter id="shadow" x="-20%" y="-25%" width="150%" height="160%"><feDropShadow dx="0" dy="12" stdDeviation="11" flood-color="#48685e" flood-opacity=".18"/></filter>
+    <clipPath id="bodyClip"><path d="M126 211c37-91 133-137 246-122 76 10 127 49 172 122-45 73-96 112-172 122-113 15-209-31-246-122Z"/></clipPath>
+  </defs>
+  <ellipse cx="304" cy="354" rx="190" ry="18" fill="#75b8a9" opacity=".13"/>
+  <g filter="url(#shadow)">
+    <!-- tail and fins -->
+    <path d="M155 211c-43-55-92-83-125-70 13 40 13 100 0 140 34 15 83-14 125-70Z" fill="url(#fin)" stroke="#418e80" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M270 113c27-55 68-83 103-69-8 37 3 69 26 98-40 9-86 2-129-29Z" fill="url(#fin)" stroke="#418e80" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M268 310c28 53 69 79 104 66-8-36 3-68 27-95-40-8-87-1-131 29Z" fill="url(#fin)" stroke="#418e80" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M320 204c-5-40 17-72 51-84 12 33 34 53 65 66-28 15-67 22-116 18Z" fill="#ef9b55" stroke="#d36d3f" stroke-width="6"/>
+    <path d="M320 219c-5 40 17 72 51 84 12-33 34-53 65-66-28-15-67-22-116-18Z" fill="#ef9b55" stroke="#d36d3f" stroke-width="6"/>
+    <!-- orange body -->
+    <path d="M126 211c37-91 133-137 246-122 76 10 127 49 172 122-45 73-96 112-172 122-113 15-209-31-246-122Z" fill="url(#orange)" stroke="#c8623d" stroke-width="8"/>
+    <!-- white clownfish bands, clipped to body -->
+    <g clip-path="url(#bodyClip)">
+      <path d="M202 73c34 69 39 204 1 281l46 8c43-83 39-219 0-293l-47 4Z" fill="url(#stripe)" stroke="#536b67" stroke-width="8"/>
+      <path d="M345 78c31 66 37 195 3 264l47-1c39-77 34-191-1-255l-49-8Z" fill="url(#stripe)" stroke="#536b67" stroke-width="8"/>
+      <path d="M146 145c56-75 146-110 242-92" fill="none" stroke="#fff4d1" stroke-width="11" opacity=".45" stroke-linecap="round"/>
+      <path d="M158 279c39 43 89 69 150 77" fill="none" stroke="#b84e34" stroke-width="7" opacity=".24" stroke-linecap="round"/>
+    </g>
+    <!-- face -->
+    <ellipse cx="452" cy="181" rx="27" ry="34" fill="#fffdf5" stroke="#d9d8c8" stroke-width="5"/>
+    <ellipse cx="459" cy="185" rx="14" ry="20" fill="#3d5b61"/>
+    <ellipse cx="463" cy="178" rx="6" ry="8" fill="#fff"/>
+    <path d="M482 226q18 15 35 0" fill="none" stroke="#9e4937" stroke-width="7" stroke-linecap="round"/>
+    <path d="M402 149q18-14 35-8" fill="none" stroke="#b65d3e" stroke-width="6" stroke-linecap="round"/>
+    <path d="M277 157c19 22 27 48 24 78" fill="none" stroke="#d6673d" stroke-width="6" stroke-linecap="round" opacity=".78"/>
+    <circle cx="426" cy="221" r="8" fill="#f07d67" opacity=".5"/>
+    <!-- fin details -->
+    <path d="M62 160q42 50 0 105M83 151q42 59 4 121M289 111q35 39 39 82M289 313q35-39 39-82" fill="none" stroke="#d7f1e5" stroke-width="7" stroke-linecap="round" opacity=".8"/>
+  </g>
+  <path d="m520 86 6 13 14 5-14 6-6 14-5-14-14-6 14-5 5-13Z" fill="#f3c65d"/>
+  <circle cx="105" cy="110" r="7" fill="#80ccba"/><circle cx="80" cy="294" r="5" fill="#f09a7d"/>
+</svg>

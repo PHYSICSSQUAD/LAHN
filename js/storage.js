@@ -39,7 +39,7 @@ export function saveData(data) {
     console.error('Could not save learning data:', error);
     const message = error?.name === 'QuotaExceededError'
       ? 'مساحة التخزين ممتلئة. احذف بعض الملفات الكبيرة ثم حاول مرة أخرى.'
-      : 'تعذّر حفظ التغييرات على هذا الجهاز.';
+      : 'تعذر حفظ التغييرات على هذا الجهاز.';
     throw new Error(message);
   }
 }
@@ -54,7 +54,7 @@ function openMediaDatabase() {
   if (databasePromise) return databasePromise;
   databasePromise = new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) {
-      reject(new Error('هذا المتصفح لا يدعم حفظ الملفات محليًا.'));
+      reject(new Error('هذا المتصفح لا يدعم حفظ الملفات محليا.'));
       return;
     }
     const request = window.indexedDB.open(DB_NAME, DB_VERSION);
@@ -65,7 +65,7 @@ function openMediaDatabase() {
       }
     };
     request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error('تعذّر فتح مساحة الملفات.'));
+    request.onerror = () => reject(request.error || new Error('تعذر فتح مساحة الملفات.'));
   });
   return databasePromise;
 }
@@ -79,7 +79,7 @@ function withStore(mode, operation) {
     const fail = (error) => {
       if (settled) return;
       settled = true;
-      reject(error || new Error('تعذّر الوصول إلى الملف.'));
+      reject(error || new Error('تعذر الوصول إلى الملف.'));
     };
     request.onsuccess = () => { result = request.result; };
     request.onerror = () => fail(request.error);
@@ -89,7 +89,7 @@ function withStore(mode, operation) {
       resolve(result);
     };
     transaction.onerror = () => fail(transaction.error);
-    transaction.onabort = () => fail(transaction.error || new Error('تعذّر حفظ الملف.'));
+    transaction.onabort = () => fail(transaction.error || new Error('تعذر حفظ الملف.'));
   }));
 }
 
@@ -108,13 +108,13 @@ async function optimizeImage(file) {
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close?.();
   const blob = await new Promise((resolve, reject) => {
-    canvas.toBlob((result) => result ? resolve(result) : reject(new Error('تعذّر تجهيز الصورة.')), 'image/webp', 0.84);
+    canvas.toBlob((result) => result ? resolve(result) : reject(new Error('تعذر تجهيز الصورة.')), 'image/webp', 0.84);
   });
   return new File([blob], `${file.name.replace(/\.[^.]+$/, '') || 'image'}.webp`, { type: 'image/webp' });
 }
 
 export async function saveMedia(file, kind = 'document') {
-  if (!file || !file.size) throw new Error('اختر ملفًا أولًا.');
+  if (!file || !file.size) throw new Error('اختر ملفا أولا.');
   const sizeLimit = kind === 'image' ? APP_CONFIG.limits.imageBytes
     : kind === 'audio' ? APP_CONFIG.limits.audioBytes
       : APP_CONFIG.limits.documentBytes;
