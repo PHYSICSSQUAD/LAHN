@@ -137,6 +137,8 @@ img { max-width: 100%; }
 .destination-liturgy .destination-art i { color: #e4b34b; }
 .destination-liturgy .destination-art b { color: #83bdb5; }
 .coptic-art > span { font-family: var(--font-coptic); color: #3d9079; font-size: 42px; font-weight: 700; }
+.coptic-art .coptic-fish-mark { width: 78px; height: 58px; display: grid; place-items: center; }
+.coptic-fish-mark img { width: 100%; height: 100%; object-fit: contain; }
 .coptic-art i { color: #e8ad4e; font-family: var(--font-coptic); font-size: 17px; }
 .destination-body { display: flex; flex-direction: column; gap: 1px; align-self: flex-start; margin-block-start: 7px; }
 .destination-body strong { color: #344340; font-size: 24px; font-weight: 900; }
@@ -296,6 +298,8 @@ img { max-width: 100%; }
 /* Coptic */
 .coptic-tip { margin-block: -5px 22px; padding: 14px 18px; display: flex; align-items: center; gap: 11px; border: 1px solid #e7eee2; border-radius: 17px; background: #f1f8ee; color: #6d7e70; }
 .coptic-tip > span:first-child { font-size: 22px; }
+.coptic-tip-fish { width: 72px; height: 51px; flex: 0 0 auto; display: grid; place-items: center; }
+.coptic-tip-fish img { width: 100%; height: 100%; object-fit: contain; }
 .coptic-tip p { flex: 1; margin: 0; font-size: 14px; font-weight: 700; }
 .coptic-tip-coptic { color: #8eb39f; direction: ltr; font-family: var(--font-coptic); font-size: 20px; letter-spacing: 5px; }
 .letter-grid { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 12px; }
@@ -447,6 +451,7 @@ img { max-width: 100%; }
 .icon-action:hover { transform: scale(1.08); }
 .edit-action { color: #528a73; background: #eaf5eb; }
 .delete-action { color: #c07065; background: #fff0eb; font-size: 22px; }
+.score-action { color: #977334; background: #fff3d6; font-size: 17px; font-weight: 900; }
 .admin-search { max-width: 340px; margin-block: -6px 14px; position: relative; display: block; }
 .admin-search > span { position: absolute; z-index: 1; inset-inline-start: 12px; inset-block-start: 6px; color: #83958a; font-size: 25px; line-height: 1; }
 .admin-search input { min-height: 42px; padding-inline-start: 38px; background: #f9fbf8; font-size: 12px; }
@@ -492,6 +497,18 @@ img { max-width: 100%; }
 .remove-file-option { margin-block-start: 5px; display: flex; align-items: center; gap: 6px; color: #a16058; font-size: 11px; }
 .remove-file-option input { accent-color: #d87970; }
 .dialog-actions { margin-block-start: 20px; padding-block-start: 14px; display: flex; justify-content: flex-start; gap: 9px; border-top: 1px solid #eef0ea; }
+.score-dialog { width: min(460px, calc(100% - 28px)); }
+.score-dialog-body { padding: 20px 23px 23px; }
+.score-current { padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; border-radius: 15px; color: #6c765d; background: #f5f8ee; font-size: 13px; font-weight: 800; }
+.score-current strong { color: #3d8169; font-size: 26px; font-variant-numeric: tabular-nums; }
+.score-dialog-body > p { margin: 16px 0 10px; color: #718078; font-size: 13px; font-weight: 800; }
+.score-adjust-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+.score-step { min-height: 58px; border: 0; border-radius: 15px; cursor: pointer; font-size: 20px; font-weight: 900; transition: transform .18s ease, filter .18s ease; }
+.score-step:hover { transform: translateY(-2px); filter: brightness(.97); }
+.score-step-plus { color: #397b64; background: #e9f5e9; }
+.score-step-minus { color: #a8564d; background: #fff0ea; }
+.score-dialog-body > small { margin-block-start: 12px; display: block; color: #949d94; font-size: 10px; }
+.score-form-note { margin: 0 0 11px; padding: 10px 12px; border-radius: 13px; color: #887342; background: #fff7e2; font-size: 11px; font-weight: 700; }
 
 /* footer and toast */
 .site-footer { margin-block-start: auto; border-top: 1px solid #eceee6; background: #f6f5ee; }
@@ -622,7 +639,8 @@ img { max-width: 100%; }
   .detail-complete-row > .button { width: 100%; }
   .coptic-tip { padding: 12px; gap: 8px; }
   .coptic-tip p { font-size: 11px; }
-  .coptic-tip-coptic { font-size: 15px; letter-spacing: 2px; }
+  .coptic-tip-fish { width: 54px; height: 40px; }
+  .coptic-tip-coptic { display: none; font-size: 15px; letter-spacing: 2px; }
   .letter-grid { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; }
   .letter-card { min-height: 109px; border-radius: 17px; }
   .letter-glyph { font-size: 39px; }
