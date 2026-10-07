@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 360" width="320" height="360" role="img" aria-label="ملاك لطيف يقرأ كتابا">
+  <title>ملاك تمهيدي أول مع الكتاب</title>
+  <defs>
+    <linearGradient id="robe" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#e8f7f0"/>
+      <stop offset="1" stop-color="#a9ddc9"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#e2f3ec"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="160" cy="180" r="142" fill="url(#glow)"/>
+  <ellipse cx="160" cy="70" rx="46" ry="12" fill="none" stroke="#eec96a" stroke-width="9"/>
+  <path d="M120 170c-30-31-59-29-71-8-13 22 2 53 31 63 21 7 41-2 47-19z" fill="url(#wing)"/>
+  <path d="M200 170c30-31 59-29 71-8 13 22-2 53-31 63-21 7-41-2-47-19z" fill="url(#wing)"/>
+  <path d="M150 178c-8 12-12 26-12 41 0 14 4 25 10 33h24c6-8 10-19 10-33 0-15-4-29-12-41z" fill="#ffffff" opacity="0.5"/>
+  <path d="M160 148c-29 0-51 16-57 43l-13 95c-1 9 6 16 15 16h110c9 0 16-7 15-16l-13-95c-6-27-28-43-57-43z" fill="url(#robe)"/>
+  <path d="M160 148c-11 0-21 2-29 7l29 21 29-21c-8-5-18-7-29-7z" fill="#ffffff" opacity="0.6"/>
+  <path d="M106 198c-15 11-23 28-20 46 1 9 11 14 19 11 9-4 13-13 12-22-1-14 3-25 12-32z" fill="#a9ddc9"/>
+  <path d="M214 198c15 11 23 28 20 46-1 9-11 14-19 11-9-4-13-13-12-22 1-14-3-25-12-32z" fill="#a9ddc9"/>
+  <circle cx="160" cy="112" r="37" fill="#ffe3d2"/>
+  <path d="M123 106c2-23 18-36 37-36s35 13 37 36c-9-11-21-15-37-15s-28 4-37 15z" fill="#6b4a33"/>
+  <circle cx="147" cy="113" r="4.6" fill="#4a3b35"/>
+  <circle cx="173" cy="113" r="4.6" fill="#4a3b35"/>
+  <circle cx="148.6" cy="111.2" r="1.5" fill="#ffffff"/>
+  <circle cx="174.6" cy="111.2" r="1.5" fill="#ffffff"/>
+  <path d="M151 127c4 6 14 6 18 0" fill="none" stroke="#cf8f77" stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="136" cy="123" r="6" fill="#f8a7bd" opacity="0.55"/>
+  <circle cx="184" cy="123" r="6" fill="#f8a7bd" opacity="0.55"/>
+  <path d="M158 206c-17-11-36-14-55-12v60c19-2 38 1 55 12z" fill="#ffffff" stroke="#d5e2da" stroke-width="3"/>
+  <path d="M162 206c17-11 36-14 55-12v60c-19-2-38 1-55 12z" fill="#f7fbf8" stroke="#d5e2da" stroke-width="3"/>
+  <path d="M160 205v61" stroke="#cfe0d8" stroke-width="3.4"/>
+  <path d="M120 216h26M120 230h26M120 244h26" stroke="#d3e5dc" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M174 216h26M174 230h26M174 244h26" stroke="#d3e5dc" stroke-width="3.4" stroke-linecap="round"/>
+  <path d="M132 249h9v-9h4v9h9v4h-9v10h-4v-10h-9z" fill="#8ec9b4"/>
+  <path d="M160 205c-6-8-16-12-27-12 8 6 13 13 15 22 5-5 8-8 12-10z" fill="#e8f5ee"/>
+  <path d="M160 205c6-8 16-12 27-12-8 6-13 13-15 22-5-5-8-8-12-10z" fill="#e8f5ee"/>
+
+  <path d="M63 84l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#9fd8c3"/>
+  <path d="M258 118l3 8 8 3-8 3-3 8-3-8-8-3 8-3z" fill="#9fd8c3"/>
+  <circle cx="86" cy="196" r="5" fill="#9fd8c3" opacity="0.75"/>
+  <circle cx="246" cy="232" r="4" fill="#9fd8c3" opacity="0.6"/>
+</svg>
