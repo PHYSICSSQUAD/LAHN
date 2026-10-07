@@ -1,5 +1,5 @@
-import { APP_CONFIG } from './config.js';
-import { DEFAULT_DATA } from './data.js';
+import { APP_CONFIG, getClassConfig, isValidClass, CLASS_IDS } from './config.js';
+import { DEFAULT_DATA, getDefaultData } from './data.js';
 
 const DB_NAME = 'lahn-media-library';
 const DB_VERSION = 1;
@@ -9,31 +9,53 @@ let databasePromise;
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
-export function loadData() {
+// ---------------------------------------------------------------------------
+// Per-class learning data: lahn-class-data-v2:<class>
+// ---------------------------------------------------------------------------
+
+export function classStorageKey(classId) {
+  return `${APP_CONFIG.classStoragePrefix}${classId}`;
+}
+
+function normalizeClassData(classId, saved) {
+  const base = getDefaultData(classId);
+  if (!saved || typeof saved !== 'object') return base;
+  return {
+    ...base,
+    ...saved,
+    version: 2,
+    classId,
+    students: Array.isArray(saved.students) ? saved.students : base.students,
+    hymns: Array.isArray(saved.hymns) ? saved.hymns : base.hymns,
+    copticLetters: Array.isArray(saved.copticLetters) ? saved.copticLetters : base.copticLetters,
+    liturgy: Array.isArray(saved.liturgy) ? saved.liturgy : base.liturgy,
+    settings: { ...base.settings, ...(saved.settings || {}) },
+    progress: { completed: [], ...(saved.progress || {}) },
+  };
+}
+
+export function loadData(classId = 'kg1') {
+  const safeClass = isValidClass(classId) ? classId : 'kg1';
   try {
-    const raw = window.localStorage.getItem(APP_CONFIG.storageKey);
-    if (!raw) return clone(DEFAULT_DATA);
-    const saved = JSON.parse(raw);
-    return {
-      ...clone(DEFAULT_DATA),
-      ...saved,
-      students: Array.isArray(saved.students) ? saved.students : clone(DEFAULT_DATA.students),
-      hymns: Array.isArray(saved.hymns) ? saved.hymns : clone(DEFAULT_DATA.hymns),
-      copticLetters: Array.isArray(saved.copticLetters) ? saved.copticLetters : clone(DEFAULT_DATA.copticLetters),
-      liturgy: Array.isArray(saved.liturgy) ? saved.liturgy : clone(DEFAULT_DATA.liturgy),
-      settings: { ...clone(DEFAULT_DATA.settings), ...(saved.settings || {}) },
-      progress: { completed: [], ...(saved.progress || {}) },
-    };
+    const raw = window.localStorage.getItem(classStorageKey(safeClass));
+    if (!raw) return getDefaultData(safeClass);
+    return normalizeClassData(safeClass, JSON.parse(raw));
   } catch (error) {
     console.error('Could not load saved learning data:', error);
-    return clone(DEFAULT_DATA);
+    return getDefaultData(safeClass);
   }
 }
 
-export function saveData(data) {
+export function saveData(classIdOrData, maybeData) {
+  // Supports both saveData(classId, data) and the legacy saveData(data) call shape.
+  const classId = typeof classIdOrData === 'string'
+    ? classIdOrData
+    : (maybeData?.classId && isValidClass(maybeData.classId) ? maybeData.classId : 'kg1');
+  const data = typeof classIdOrData === 'string' ? maybeData : classIdOrData;
+  const safeClass = isValidClass(classId) ? classId : 'kg1';
   try {
-    window.localStorage.setItem(APP_CONFIG.storageKey, JSON.stringify(data));
-    window.dispatchEvent(new CustomEvent('lahn:data-updated'));
+    window.localStorage.setItem(classStorageKey(safeClass), JSON.stringify({ ...data, classId: safeClass, version: 2 }));
+    window.dispatchEvent(new CustomEvent('lahn:class-data-updated', { detail: { classId: safeClass } }));
     return true;
   } catch (error) {
     console.error('Could not save learning data:', error);
@@ -44,11 +66,148 @@ export function saveData(data) {
   }
 }
 
-export function resetData() {
-  const fresh = clone(DEFAULT_DATA);
-  saveData(fresh);
+export function resetData(classId = 'kg1') {
+  const safeClass = isValidClass(classId) ? classId : 'kg1';
+  const fresh = getDefaultData(safeClass);
+  saveData(safeClass, fresh);
   return fresh;
 }
+
+export function hasSavedClassData(classId) {
+  try {
+    return Boolean(window.localStorage.getItem(classStorageKey(classId)));
+  } catch {
+    return false;
+  }
+}
+
+export function loadAllClassData() {
+  return CLASS_IDS.reduce((result, classId) => {
+    result[classId] = loadData(classId);
+    return result;
+  }, {});
+}
+
+export function loadClassSummary() {
+  return CLASS_IDS.map((classId) => {
+    const config = getClassConfig(classId);
+    const data = loadData(classId);
+    return {
+      classId,
+      config,
+      counts: {
+        students: data.students.length,
+        hymns: data.hymns.length,
+        copticLetters: data.copticLetters.length,
+        liturgy: data.liturgy.length,
+      },
+      saved: hasSavedClassData(classId),
+    };
+  });
+}
+
+// Old single-class links kept their data in lahn-learning-data-v1.
+// It is copied once into the kg1 key so nothing is lost after the upgrade.
+export function migrateLegacyData() {
+  try {
+    const legacy = window.localStorage.getItem(APP_CONFIG.legacyStorageKey);
+    if (!legacy) return false;
+    if (!window.localStorage.getItem(classStorageKey('kg1'))) {
+      window.localStorage.setItem(classStorageKey('kg1'), legacy);
+    }
+    window.localStorage.removeItem(APP_CONFIG.legacyStorageKey);
+    return true;
+  } catch (error) {
+    console.warn('Could not migrate the previous data set:', error);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Last opened class: keeps old links without a class working.
+// ---------------------------------------------------------------------------
+
+export function getLastClass() {
+  try {
+    const value = window.localStorage.getItem(APP_CONFIG.lastClassKey);
+    return isValidClass(value) ? value : '';
+  } catch {
+    return '';
+  }
+}
+
+export function setLastClass(classId) {
+  if (!isValidClass(classId)) return;
+  try {
+    window.localStorage.setItem(APP_CONFIG.lastClassKey, classId);
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
+export function clearLastClass() {
+  try {
+    window.localStorage.removeItem(APP_CONFIG.lastClassKey);
+  } catch {
+    /* ignore storage failures */
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared site data: lahn-site-data-v1 (contact page edited by the general admin)
+// ---------------------------------------------------------------------------
+
+export const DEFAULT_SITE_DATA = Object.freeze({
+  version: 1,
+  contact: Object.freeze({
+    personName: 'خدام مدرسة الشمامسة',
+    role: 'مدرسة شمامسة كنيسة الشهيد العظيم ابي سيفين بحدائق القبة',
+    message: 'يسعدنا أن نستقبل أسئلتكم واقتراحاتكم، وأن نساعد كل أسرة في رحلة التعلم.',
+    phone: '+201005550100',
+    whatsapp: '201005550100',
+    email: 'lahn.school@example.com',
+    facebook: 'https://www.facebook.com/lahn.school',
+    address: 'كنيسة الشهيد العظيم ابي سيفين — حدائق القبة، القاهرة',
+    hours: 'الجمعة والسبت: من 9 صباحا إلى 12 ظهرا',
+  }),
+});
+
+export function loadSiteData() {
+  try {
+    const raw = window.localStorage.getItem(APP_CONFIG.siteStorageKey);
+    if (!raw) return clone(DEFAULT_SITE_DATA);
+    const saved = JSON.parse(raw);
+    return {
+      version: 1,
+      ...saved,
+      contact: { ...clone(DEFAULT_SITE_DATA.contact), ...(saved.contact || {}) },
+    };
+  } catch (error) {
+    console.error('Could not load saved site data:', error);
+    return clone(DEFAULT_SITE_DATA);
+  }
+}
+
+export function saveSiteData(siteData) {
+  try {
+    window.localStorage.setItem(APP_CONFIG.siteStorageKey, JSON.stringify({ version: 1, ...siteData }));
+    window.dispatchEvent(new CustomEvent('lahn:site-data-updated'));
+    return true;
+  } catch (error) {
+    console.error('Could not save site data:', error);
+    throw new Error('تعذر حفظ بيانات الموقع على هذا الجهاز.');
+  }
+}
+
+export function resetSiteData() {
+  const fresh = clone(DEFAULT_SITE_DATA);
+  saveSiteData(fresh);
+  return fresh;
+}
+
+// ---------------------------------------------------------------------------
+// Media library (IndexedDB) — shared by all classes, ids stay unique.
+// ---------------------------------------------------------------------------
 
 function openMediaDatabase() {
   if (databasePromise) return databasePromise;
@@ -177,3 +336,5 @@ export function createId(prefix = 'item') {
   const random = crypto.randomUUID?.().slice(0, 8) || Math.random().toString(36).slice(2, 10);
   return `${prefix}-${random}`;
 }
+
+export { DEFAULT_DATA };

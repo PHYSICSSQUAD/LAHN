@@ -26,6 +26,69 @@ export function youtubeAnchor(raw, label = 'شاهد على يوتيوب', class
   return `<a class="${className}" href="${escapeHTML(href)}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">▶</span><span>${escapeHTML(label)}</span><span class="external-mark" aria-hidden="true">↗</span></a>`;
 }
 
+// ---------------------------------------------------------------------------
+// Class-aware links: every class page lives under #/<class>/<page>
+// ---------------------------------------------------------------------------
+
+export function classHref(classId, path = '/home', params = {}) {
+  const base = classId ? `#/${classId}${path}` : `#${path}`;
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') search.set(key, value);
+  });
+  const query = search.toString();
+  return `${base}${query ? `?${query}` : ''}`;
+}
+
+export function sectionForPage(page = '') {
+  if (page === 'hymns' || page === 'hymn') return 'hymns';
+  if (page === 'coptic' || page === 'letter') return 'coptic';
+  if (page === 'liturgy' || page === 'ritual') return 'liturgy';
+  return '';
+}
+
+// ---------------------------------------------------------------------------
+// Safe contact links (tel:, wa.me, mailto:, facebook)
+// ---------------------------------------------------------------------------
+
+export function phoneDigits(raw = '') {
+  let digits = String(raw).replace(/[^\d+]/g, '');
+  if (digits.startsWith('+')) digits = digits.slice(1);
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  return digits.replace(/\D/g, '');
+}
+
+export function telHref(phone = '') {
+  const digits = phoneDigits(phone);
+  return digits ? `tel:${digits}` : '';
+}
+
+export function whatsappHref(phone = '') {
+  const digits = phoneDigits(phone);
+  return digits ? `https://wa.me/${digits}` : '';
+}
+
+export function mailtoHref(email = '') {
+  const value = String(email).trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? `mailto:${value}` : '';
+}
+
+export function facebookHref(raw = '') {
+  const value = String(raw).trim();
+  if (!value) return '';
+  if (value.startsWith('@')) return `https://www.facebook.com/${encodeURIComponent(value.slice(1))}`;
+  if (!/^https?:\/\//i.test(value) && /^[\w.\-]{3,}$/.test(value)) return `https://www.facebook.com/${encodeURIComponent(value)}`;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase().replace(/^www\./, '');
+    const allowed = ['facebook.com', 'm.facebook.com', 'fb.com', 'fb.me', 'm.me', 'messenger.com'];
+    if (!allowed.includes(host)) return '';
+    return url.href;
+  } catch {
+    return '';
+  }
+}
+
 export function sortByOrder(items = []) {
   return [...items].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 }
@@ -42,15 +105,6 @@ export function formatTime(seconds = 0) {
   return `${mins}:${secs}`;
 }
 
-export function createHashUrl(path, params = {}) {
-  const query = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') query.set(key, value);
-  });
-  const search = query.toString();
-  return `#${path}${search ? `?${search}` : ''}`;
-}
-
 export function textParagraphs(text = '') {
   return String(text).split(/\n\s*\n/).map((paragraph) => paragraph.trim()).filter(Boolean)
     .map((paragraph) => `<p>${escapeHTML(paragraph).replaceAll('\n', '<br>')}</p>`).join('');
@@ -58,13 +112,6 @@ export function textParagraphs(text = '') {
 
 export function getRankLabel(index) {
   return ['🥇', '🥈', '🥉'][index] || `${index + 1}`;
-}
-
-export function getActiveSection(path) {
-  if (path.startsWith('/hymn') || path === '/hymns') return 'hymns';
-  if (path.startsWith('/letter') || path === '/coptic') return 'coptic';
-  if (path.startsWith('/ritual') || path === '/liturgy') return 'liturgy';
-  return '';
 }
 
 export function humanFileSize(bytes = 0) {

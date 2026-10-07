@@ -1,7 +1,10 @@
-import { APP_CONFIG } from './config.js';
-import { DEFAULT_DATA } from './data.js';
-import { createId, deleteMedia, loadData, resetData, saveData, saveMedia } from './storage.js';
-import { escapeHTML, safeYouTubeUrl, sortByOrder, sortStudents } from './utils.js';
+import { APP_CONFIG, CLASS_LIST, getClassConfig } from './config.js';
+import { getDefaultData } from './data.js';
+import {
+  createId, deleteMedia, loadClassSummary, loadData, resetData, resetSiteData, saveData, saveMedia, saveSiteData,
+} from './storage.js';
+import { renderClassSwitcher } from './components.js';
+import { escapeHTML, safeYouTubeUrl, sortByOrder, sortStudents, facebookHref, mailtoHref } from './utils.js';
 
 const sectionConfig = {
   students: {
@@ -58,9 +61,7 @@ const sectionConfig = {
   },
 };
 
-const boundRoots = new WeakSet();
-
-const sections = [
+const CLASS_SECTIONS = [
   ['overview', 'نظرة عامة', '⌂'],
   ['students', 'الأبطال والنقاط', '🏆'],
   ['hymns', 'الألحان', '🎵'],
@@ -69,22 +70,50 @@ const sections = [
   ['settings', 'الإعدادات والنسخ', '⚙️'],
 ];
 
-function isLoggedIn() {
-  try { return window.sessionStorage.getItem(APP_CONFIG.adminSessionKey) === 'active'; } catch { return false; }
+const CONTACT_SECTION = ['contact', 'صفحة التواصل', '✉️'];
+
+const boundRoots = new WeakSet();
+const rootContexts = new WeakMap();
+
+function isGeneralSession(session) {
+  return session?.role === 'general';
 }
 
-function renderLogin() {
-  return `<div class="admin-gate page-enter"><div class="admin-gate-copy"><span class="eyebrow">دخول خاص بالمدير</span><h1>أهلا بكم في<br /><span>لوحة الإدارة</span> 🔐</h1><p>من هنا يمكنكم إضافة الدروس، ترتيب الألحان، وتحديث لوحة الأبطال.</p><div class="gate-note"><span aria-hidden="true">🧡</span><div><strong>الدخول للمدير فقط</strong><small>البيانات التجريبية تحفظ على هذا الجهاز.</small></div></div><a class="back-home-link" href="#/home">← العودة إلى الصفحة الرئيسية</a></div><div class="admin-login-card"><div class="login-lock" aria-hidden="true">🔑</div><span class="eyebrow">تسجيل الدخول</span><h2>مرحبا بعودتكم</h2><p>اكتبوا اسم المستخدم وكلمة المرور.</p><form data-admin-login novalidate><label class="form-label" for="admin-username">اسم المستخدم</label><input id="admin-username" name="username" type="text" autocomplete="username" required placeholder="اسم المستخدم" /><label class="form-label" for="admin-password">كلمة المرور</label><input id="admin-password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" /><p class="login-error" data-login-error role="alert" hidden></p><button class="button button-primary button-wide login-submit" type="submit">دخول لوحة الإدارة <span aria-hidden="true">←</span></button></form><div class="login-security-note"><span aria-hidden="true">🛡️</span> نسخة العرض لا تستخدم تسجيل دخول آمنا للخوادم. لا تنشروا كلمات مرور حقيقية هنا.</div></div></div>`;
+function sectionsFor(session) {
+  return isGeneralSession(session) ? [...CLASS_SECTIONS, CONTACT_SECTION] : [...CLASS_SECTIONS];
 }
 
-function renderOverview(data) {
+// ---------------------------------------------------------------------------
+// Login gate
+// ---------------------------------------------------------------------------
+
+function renderLogin({ session, targetClass = '', classScoped = false } = {}) {
+  const classConfig = classScoped ? getClassConfig(targetClass) : null;
+  const heading = classConfig
+    ? `أهلا بكم في<br /><span>لوحة فصل ${escapeHTML(classConfig.name)}</span> ${escapeHTML(classConfig.emoji)}`
+    : 'أهلا بكم في<br /><span>لوحة المدير العام</span> 🔐';
+  const intro = classConfig
+    ? `من هنا يدير خادم ${escapeHTML(classConfig.name)} ألحان الفصل وحروفه ودروسه وأبطاله.`
+    : 'من هنا يدير المدير العام كل الفصول، ويعدل صفحة التواصل. مديرو الفصول يدخلون من لوحة فصلهم.';
+  return `<div class="admin-gate page-enter"><div class="admin-gate-copy"><span class="eyebrow">دخول خاص بالمديرين</span><h1>${heading}</h1><p>${intro}</p><div class="gate-note"><span aria-hidden="true">🧡</span><div><strong>كل فصل له لوحته وبياناته</strong><small>${classConfig ? `حساب ${escapeHTML(classConfig.name)} يعدل هذا الفصل فقط.` : 'المدير العام يعدل كل الفصول وصفحة التواصل.'}</small></div></div><a class="back-home-link" href="#/">← كل الفصول</a></div><div class="admin-login-card"><div class="login-lock" aria-hidden="true">🔑</div><span class="eyebrow">تسجيل الدخول</span><h2>مرحبا بعودتكم</h2><p>اكتبوا اسم المستخدم وكلمة المرور.</p><form data-admin-login novalidate data-login-scope="${classScoped ? 'class' : 'general'}" data-login-class="${escapeHTML(targetClass)}"><label class="form-label" for="admin-username">اسم المستخدم</label><input id="admin-username" name="username" type="text" autocomplete="username" required placeholder="اسم المستخدم" /><label class="form-label" for="admin-password">كلمة المرور</label><input id="admin-password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" /><p class="login-error" data-login-error role="alert" hidden></p><button class="button button-primary button-wide login-submit" type="submit">دخول لوحة الإدارة <span aria-hidden="true">←</span></button></form><div class="login-hint"><span aria-hidden="true">🗂️</span> حسابات التجربة: <b>admin</b> (مدير عام) و<b>babyclass</b> و<b>kg1</b> و<b>kg2</b> (مديرو الفصول).</div><div class="login-security-note"><span aria-hidden="true">🛡️</span> نسخة العرض لا تستخدم تسجيل دخول آمنا للخوادم. لا تنشروا كلمات مرور حقيقية هنا.</div></div></div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Overview
+// ---------------------------------------------------------------------------
+
+function renderOverview(data, { session, targetClass }) {
+  const classConfig = getClassConfig(targetClass);
   const counts = [
     ['students', 'الأبطال', '🏆', data.students.length],
     ['hymns', 'الألحان', '🎵', data.hymns.length],
     ['copticLetters', 'الحروف', 'Ⲁ', data.copticLetters.length],
     ['liturgy', 'دروس الطقس', '⛪', data.liturgy.length],
   ];
-  return `<div class="admin-overview"><div class="admin-welcome"><div><span class="eyebrow">لوحة الإدارة</span><h2>أهلا بكم 👋</h2><p>كل شيء جاهز لتصنعوا رحلة تعلم أجمل.</p></div><span class="admin-welcome-art" aria-hidden="true">🌈</span></div><div class="admin-stats-grid">${counts.map(([tab, label, icon, count]) => `<button class="admin-stat-card stat-${tab}" type="button" data-admin-tab="${tab}"><span class="stat-icon" aria-hidden="true">${icon}</span><span class="stat-number">${count}</span><span class="stat-label">${label}</span><span class="stat-arrow" aria-hidden="true">←</span></button>`).join('')}</div><div class="admin-overview-lower"><div class="admin-hint-card"><span class="admin-hint-icon" aria-hidden="true">✨</span><div><h3>ابدأوا بخطوة صغيرة</h3><p>حدثوا تسجيلا أو أضيفوا درسا واحدا. كل ما تحفظونه يبقى على هذا المتصفح بعد إعادة التحميل.</p></div></div><div class="admin-safety-card"><span aria-hidden="true">🔒</span><div><strong>ملاحظة مهمة عن الأمان</strong><p>وضع العرض محلي لهذا الجهاز فقط، وليس مناسبا لحفظ بيانات أطفال حقيقية.</p></div></div></div></div>`;
+  const summary = isGeneralSession(session)
+    ? `<div class="admin-classes-grid">${loadClassSummary().map((entry) => `<button class="admin-class-card ${entry.classId === targetClass ? 'is-active' : ''}" type="button" data-admin-class="${entry.classId}"><span class="admin-class-emoji" aria-hidden="true">${escapeHTML(entry.config.emoji)}</span><span class="admin-class-name">${escapeHTML(entry.config.name)}</span><small>${entry.counts.students} طالب · ${entry.counts.hymns} لحن · ${entry.counts.copticLetters} حرف · ${entry.counts.liturgy} درس</small><span class="admin-class-link">${entry.saved ? 'بيانات محفوظة' : 'بيانات البداية'} <span aria-hidden="true">←</span></span></button>`).join('')}</div>`
+    : '';
+  return `<div class="admin-overview"><div class="admin-welcome"><div><span class="eyebrow">${escapeHTML(classConfig.name)} · ${escapeHTML(classConfig.arabicName)}</span><h2>أهلا بكم 👋</h2><p>كل شيء جاهز لتصنعوا رحلة تعلم أجمل${isGeneralSession(session) ? ' — اختاروا الفصل الذي تريدون تعديله من الشريط أعلى الصفحة.' : ` لفصل ${escapeHTML(classConfig.name)}.`}</p></div><span class="admin-welcome-art" aria-hidden="true">${escapeHTML(classConfig.emoji)}</span></div>${summary}<div class="admin-stats-grid">${counts.map(([tab, label, icon, count]) => `<button class="admin-stat-card stat-${tab}" type="button" data-admin-tab="${tab}"><span class="stat-icon" aria-hidden="true">${icon}</span><span class="stat-number">${count}</span><span class="stat-label">${label}</span><span class="stat-arrow" aria-hidden="true">←</span></button>`).join('')}</div><div class="admin-overview-lower"><div class="admin-hint-card"><span class="admin-hint-icon" aria-hidden="true">✨</span><div><h3>ابدأوا بخطوة صغيرة</h3><p>حدثوا تسجيلا أو أضيفوا درسا واحدا. كل ما تحفظونه يبقى على هذا المتصفح بعد إعادة التحميل، ولكل فصل بياناته منفصلة عن باقي الفصول.</p></div></div><div class="admin-safety-card"><span aria-hidden="true">🔒</span><div><strong>ملاحظة مهمة عن الأمان</strong><p>وضع العرض محلي لهذا الجهاز فقط، وليس مناسبا لحفظ بيانات أطفال حقيقية.</p></div></div></div></div>`;
 }
 
 function getItems(data, type) {
@@ -105,32 +134,63 @@ function getItemSubline(type, item, index) {
   return item.description || 'لا يوجد وصف بعد';
 }
 
-function renderList(data, type) {
+function renderList(data, type, classId) {
   const config = sectionConfig[type];
   const items = getItems(data, type);
-  return `<section class="admin-list-section"><div class="admin-section-title"><div><span class="eyebrow">إدارة المحتوى</span><h2>${config.icon} ${config.title}</h2><p>${type === 'students' ? 'الترتيب تلقائي. عدلوا النقاط بخطوات ثابتة: 20 أو 50 أو 100.' : 'أضيفوا المحتوى وعدلوا ترتيبه بسهولة.'}</p></div><button class="button button-primary admin-add-button" type="button" data-add="${type}"><span aria-hidden="true">＋</span> إضافة ${config.singular}</button></div>${items.length > 4 ? `<label class="admin-search"><span aria-hidden="true">⌕</span><input type="search" data-admin-search placeholder="ابحث في ${config.title}…" aria-label="ابحث في ${config.title}" /></label>` : ''}<div class="admin-items-grid" data-admin-items>${items.length ? items.map((item, index) => `<article class="admin-item-card" data-searchable="${escapeHTML(`${getItemMain(type, item)} ${getItemSubline(type, item, index)}`).toLowerCase()}"><div class="admin-item-icon" aria-hidden="true">${escapeHTML(item.avatar || item.icon || item.glyph || config.icon)}</div><div class="admin-item-copy"><strong>${escapeHTML(getItemMain(type, item))}</strong><small>${escapeHTML(getItemSubline(type, item, index))}</small></div><div class="admin-item-actions">${type === 'students' ? `<button class="icon-action score-action" type="button" data-score-edit="${escapeHTML(item.id)}" aria-label="تعديل نقاط ${escapeHTML(item.name)}" title="تعديل النقاط">±</button>` : ''}<button class="icon-action edit-action" type="button" data-edit="${escapeHTML(type)}:${escapeHTML(item.id)}" aria-label="تعديل ${escapeHTML(getItemMain(type, item))}" title="تعديل">✎</button><button class="icon-action delete-action" type="button" data-delete="${escapeHTML(type)}:${escapeHTML(item.id)}" aria-label="حذف ${escapeHTML(getItemMain(type, item))}" title="حذف">×</button></div></article>`).join('') : `<div class="admin-empty-state"><span aria-hidden="true">${config.icon}</span><strong>لا يوجد محتوى بعد</strong><p>ابدأوا بإضافة ${config.singular} جديد.</p><button class="button button-soft" type="button" data-add="${type}">＋ إضافة الآن</button></div>`}</div><p class="admin-search-empty" data-search-empty hidden>لم نعثر على نتائج. جرب كلمة أخرى.</p></section>`;
+  const classConfig = getClassConfig(classId);
+  return `<section class="admin-list-section"><div class="admin-section-title"><div><span class="eyebrow">إدارة محتوى ${escapeHTML(classConfig.name)}</span><h2>${config.icon} ${config.title}</h2><p>${type === 'students' ? 'الترتيب تلقائي. عدلوا النقاط بخطوات ثابتة: 20 أو 50 أو 100.' : 'أضيفوا المحتوى وعدلوا ترتيبه بسهولة.'}</p></div><button class="button button-primary admin-add-button" type="button" data-add="${type}"><span aria-hidden="true">＋</span> إضافة ${config.singular}</button></div>${items.length > 4 ? `<label class="admin-search"><span aria-hidden="true">⌕</span><input type="search" data-admin-search placeholder="ابحث في ${config.title}…" aria-label="ابحث في ${config.title}" /></label>` : ''}<div class="admin-items-grid" data-admin-items>${items.length ? items.map((item, index) => `<article class="admin-item-card" data-searchable="${escapeHTML(`${getItemMain(type, item)} ${getItemSubline(type, item, index)}`).toLowerCase()}"><div class="admin-item-icon" aria-hidden="true">${escapeHTML(item.avatar || item.icon || item.glyph || config.icon)}</div><div class="admin-item-copy"><strong>${escapeHTML(getItemMain(type, item))}</strong><small>${escapeHTML(getItemSubline(type, item, index))}</small></div><div class="admin-item-actions">${type === 'students' ? `<button class="icon-action score-action" type="button" data-score-edit="${escapeHTML(item.id)}" aria-label="تعديل نقاط ${escapeHTML(item.name)}" title="تعديل النقاط">±</button>` : ''}<button class="icon-action edit-action" type="button" data-edit="${escapeHTML(type)}:${escapeHTML(item.id)}" aria-label="تعديل ${escapeHTML(getItemMain(type, item))}" title="تعديل">✎</button><button class="icon-action delete-action" type="button" data-delete="${escapeHTML(type)}:${escapeHTML(item.id)}" aria-label="حذف ${escapeHTML(getItemMain(type, item))}" title="حذف">×</button></div></article>`).join('') : `<div class="admin-empty-state"><span aria-hidden="true">${config.icon}</span><strong>لا يوجد محتوى بعد</strong><p>ابدأوا بإضافة ${config.singular} جديد لفصل ${escapeHTML(classConfig.name)}.</p><button class="button button-soft" type="button" data-add="${type}">＋ إضافة الآن</button></div>`}</div><p class="admin-search-empty" data-search-empty hidden>لم نعثر على نتائج. جرب كلمة أخرى.</p></section>`;
 }
 
-function renderSettings(data) {
-  return `<section class="admin-list-section settings-section"><div class="admin-section-title"><div><span class="eyebrow">إعدادات الرحلة</span><h2>⚙️ الروابط والنسخ الاحتياطي</h2><p>عدلوا المصادر التعليمية واحفظوا نسخة من محتوى النصوص.</p></div></div><form class="settings-form" data-settings-form><label class="form-label" for="coptic-source">رابط مصدر القبطي على يوتيوب</label><input id="coptic-source" name="copticSourceUrl" type="url" value="${escapeHTML(data.settings?.copticSourceUrl || '')}" placeholder="https://www.youtube.com/…" /><small class="field-help">يقبل رابط يوتيوب أو يوتيوب القصير فقط. يمكن تركه فارغا.</small><label class="form-label" for="parent-note">رسالة للأهل</label><textarea id="parent-note" name="parentNote" rows="3">${escapeHTML(data.settings?.parentNote || '')}</textarea><div class="form-actions"><button class="button button-primary" type="submit">حفظ الإعدادات</button></div></form><div class="backup-panel"><div><h3>نسخة من المحتوى</h3><p>يمكن تنزيل الأسماء والنصوص والإعدادات كملف JSON. الملفات الصوتية والصور المحملة لا تدخل في هذه النسخة.</p></div><div class="backup-actions"><button class="button button-soft" type="button" data-export-backup>⬇️ تنزيل نسخة</button><label class="button button-soft backup-import-button">⬆️ استيراد نسخة<input type="file" accept="application/json,.json" data-import-backup hidden /></label></div></div><div class="reset-panel"><div><strong>إعادة بيانات العرض</strong><small>سيعود المحتوى النصي إلى الأمثلة الأصلية. لا يمكن التراجع عن ذلك.</small></div><button class="button button-danger" type="button" data-reset-demo>إعادة الأمثلة</button></div><div class="storage-disclaimer"><span aria-hidden="true">⚠️</span><p>التعديلات والملفات محفوظة محليا في هذا المتصفح فقط. لن تظهر تلقائيا للزوار أو على جهاز آخر.</p></div></section>`;
+function renderSettings(data, classId) {
+  const classConfig = getClassConfig(classId);
+  return `<section class="admin-list-section settings-section"><div class="admin-section-title"><div><span class="eyebrow">إعدادات فصل ${escapeHTML(classConfig.name)}</span><h2>⚙️ الروابط والنسخ الاحتياطي</h2><p>عدلوا المصادر التعليمية واحفظوا نسخة من محتوى النصوص. هذه الإعدادات تخص هذا الفصل وحده.</p></div></div><form class="settings-form" data-settings-form><label class="form-label" for="coptic-source">رابط مصدر القبطي على يوتيوب</label><input id="coptic-source" name="copticSourceUrl" type="url" value="${escapeHTML(data.settings?.copticSourceUrl || '')}" placeholder="https://www.youtube.com/…" /><small class="field-help">يقبل رابط يوتيوب أو يوتيوب القصير فقط. يمكن تركه فارغا.</small><label class="form-label" for="parent-note">رسالة للأهل</label><textarea id="parent-note" name="parentNote" rows="3">${escapeHTML(data.settings?.parentNote || '')}</textarea><div class="form-actions"><button class="button button-primary" type="submit">حفظ الإعدادات</button></div></form><div class="backup-panel"><div><h3>نسخة من محتوى ${escapeHTML(classConfig.name)}</h3><p>يمكن تنزيل الأسماء والنصوص والإعدادات كملف JSON. الملفات الصوتية والصور المحملة لا تدخل في هذه النسخة.</p></div><div class="backup-actions"><button class="button button-soft" type="button" data-export-backup>⬇️ تنزيل نسخة</button><label class="button button-soft backup-import-button">⬆️ استيراد نسخة<input type="file" accept="application/json,.json" data-import-backup hidden /></label></div></div><div class="reset-panel"><div><strong>إعادة بيانات فصل ${escapeHTML(classConfig.name)}</strong><small>سيعود المحتوى النصي إلى الأمثلة الأصلية لهذا الفصل فقط. لا يمكن التراجع عن ذلك.</small></div><button class="button button-danger" type="button" data-reset-demo>إعادة الأمثلة</button></div><div class="storage-disclaimer"><span aria-hidden="true">⚠️</span><p>تُحفظ بيانات كل فصل في مفتاح مستقل: <code dir="ltr">${escapeHTML(APP_CONFIG.classStoragePrefix)}${escapeHTML(classConfig.id)}</code></p></div></section>`;
 }
 
-export function renderAdminPage(data, activeTab = 'overview') {
-  if (!isLoggedIn()) return renderLogin();
-  const active = sections.some(([id]) => id === activeTab) ? activeTab : 'overview';
-  const content = active === 'overview' ? renderOverview(data)
-    : active === 'settings' ? renderSettings(data)
-      : renderList(data, active);
-  return `<div class="admin-page page-enter"><div class="admin-heading"><div><span class="eyebrow">مساحة الكبار</span><h1>لوحة الإدارة <span aria-hidden="true">🧡</span></h1><p>أضيفوا وعدلوا محتوى رحلة لحن.</p></div><button class="button button-soft admin-logout" type="button" data-admin-logout>تسجيل الخروج <span aria-hidden="true">↗</span></button></div><div class="admin-dashboard"><aside class="admin-sidebar" aria-label="أقسام لوحة الإدارة"><span class="sidebar-label">القائمة</span>${sections.map(([id, label, icon]) => `<button class="admin-sidebar-link ${active === id ? 'is-active' : ''}" type="button" data-admin-tab="${id}" ${active === id ? 'aria-current="page"' : ''}><span class="sidebar-icon" aria-hidden="true">${icon}</span><span>${label}</span><span class="sidebar-chevron" aria-hidden="true">‹</span></button>`).join('')}<div class="sidebar-safety"><span aria-hidden="true">🔐</span><small>إدارة تجريبية<br />على هذا الجهاز</small></div></aside><div class="admin-main-panel">${content}</div></div><div class="admin-bottom-notice"><span aria-hidden="true">💾</span> تحفظ التغييرات على هذا المتصفح تلقائيا بعد الضغط على حفظ.</div></div>`;
+function renderContactEditor(siteData) {
+  const contact = siteData.contact || {};
+  const field = (name, label, { type = 'text', placeholder = '', help = '', rows = 3 } = {}) => {
+    const value = escapeHTML(contact[name] || '');
+    const control = type === 'textarea'
+      ? `<textarea id="contact-${name}" name="${name}" rows="${rows}" placeholder="${escapeHTML(placeholder)}">${value}</textarea>`
+      : `<input id="contact-${name}" name="${name}" type="${type}" value="${value}" placeholder="${escapeHTML(placeholder)}" />`;
+    return `<div class="admin-field">${`<label class="form-label" for="contact-${name}">${escapeHTML(label)}</label>`}${control}${help ? `<small class="field-help">${escapeHTML(help)}</small>` : ''}</div>`;
+  };
+  const hasPreview = Boolean(contact.personName || contact.phone || contact.email || contact.facebook);
+  const preview = hasPreview ? contact : null;
+  return `<section class="admin-list-section settings-section contact-editor"><div class="admin-section-title"><div><span class="eyebrow">بيانات مشتركة لكل الموقع</span><h2>✉️ صفحة التواصل</h2><p>هذه البيانات تظهر في صفحة <b dir="ltr">#/contact</b> وفي تذييل كل الصفحات. يحررها المدير العام فقط.</p></div><a class="button button-soft" href="#/contact">معاينة الصفحة <span aria-hidden="true">←</span></a></div><form class="settings-form" data-contact-form><div class="contact-editor-grid">${field('personName', 'الاسم', { placeholder: 'مثال: خادم مدرسة الشمامسة' })}${field('role', 'الصفة', { placeholder: 'مثال: مدرسة شمامسة كنيسة …' })}${field('phone', 'رقم الهاتف', { placeholder: '+201005550100', help: 'يظهر كرابط اتصال tel: مباشر.' })}${field('whatsapp', 'رقم الواتساب', { placeholder: '201005550100', help: 'اكتب الرقم بالكود الدولي من دون + ليظهر رابط wa.me صحيحا.' })}${field('email', 'البريد الإلكتروني', { type: 'email', placeholder: 'name@example.com' })}${field('facebook', 'رابط فيسبوك', { placeholder: 'https://www.facebook.com/…' })}</div>${field('address', 'العنوان', { placeholder: 'كنيسة … — العنوان' })}${field('hours', 'مواعيد التواصل', { placeholder: 'الجمعة والسبت: من … إلى …' })}${field('message', 'رسالة ترحيب', { type: 'textarea', placeholder: 'رسالة قصيرة تظهر أعلى بيانات التواصل' })}<div class="form-actions"><button class="button button-primary" type="submit">حفظ بيانات التواصل</button><button class="button button-soft" type="button" data-contact-reset>استعادة النموذج</button></div><small class="field-help">تُحفظ في مفتاح <code dir="ltr">${escapeHTML(APP_CONFIG.siteStorageKey)}</code>.</small></form><div class="contact-preview">${preview ? `<h3>معاينة سريعة</h3><ul class="contact-list">${contact.personName ? `<li class="contact-row"><span class="contact-icon" aria-hidden="true">🧑‍🏫</span><span class="contact-copy"><small>الاسم</small><span>${escapeHTML(contact.personName)}</span></span></li>` : ''}${contact.phone ? `<li class="contact-row"><span class="contact-icon" aria-hidden="true">📞</span><span class="contact-copy"><small>هاتف</small><span dir="ltr">${escapeHTML(contact.phone)}</span></span></li>` : ''}${facebookHref(contact.facebook) ? `<li class="contact-row"><span class="contact-icon" aria-hidden="true">📘</span><span class="contact-copy"><small>فيسبوك</small><span dir="ltr">${escapeHTML(facebookHref(contact.facebook))}</span></span></li>` : ''}${mailtoHref(contact.email) ? `<li class="contact-row"><span class="contact-icon" aria-hidden="true">✉️</span><span class="contact-copy"><small>بريد</small><span dir="ltr">${escapeHTML(mailtoHref(contact.email))}</span></span></li>` : ''}</ul>` : '<p class="contact-preview-empty">املأوا البيانات ثم اضغطوا حفظ لتظهر المعاينة.</p>'}</div></section>`;
 }
+
+// ---------------------------------------------------------------------------
+// Admin page
+// ---------------------------------------------------------------------------
+
+export function renderAdminPage({ data, session, targetClass, activeTab = 'overview', siteData }) {
+  if (!session) {
+    return renderLogin({ session, targetClass, classScoped: Boolean(targetClass) });
+  }
+  const classConfig = getClassConfig(targetClass) || getClassConfig('kg1');
+  const allowed = sectionsFor(session);
+  const active = allowed.some(([id]) => id === activeTab) ? activeTab : 'overview';
+  const content = active === 'overview' ? renderOverview(data, { session, targetClass })
+    : active === 'contact' ? renderContactEditor(siteData, session)
+      : active === 'settings' ? renderSettings(data, targetClass)
+        : renderList(data, active, targetClass);
+  const roleLabel = isGeneralSession(session) ? 'مدير عام · كل الفصول' : `مدير فصل ${classConfig.name}`;
+  const switcher = isGeneralSession(session) ? renderClassSwitcher({ selectedClass: targetClass, session }) : '';
+  return `<div class="admin-page page-enter">${switcher}<div class="admin-heading"><div><span class="eyebrow">مساحة الكبار</span><h1>لوحة ${escapeHTML(classConfig.name)} <span aria-hidden="true">${escapeHTML(classConfig.emoji)}</span></h1><p>${escapeHTML(roleLabel)} — ${isGeneralSession(session) ? 'تعدلون كل الفصول وصفحة التواصل.' : 'تعدلون هذا الفصل فقط.'}</p></div><button class="button button-soft admin-logout" type="button" data-admin-logout>تسجيل الخروج <span aria-hidden="true">↗</span></button></div><div class="admin-dashboard"><aside class="admin-sidebar" aria-label="أقسام لوحة الإدارة"><span class="sidebar-label">القائمة</span>${allowed.map(([id, label, icon]) => `<button class="admin-sidebar-link ${active === id ? 'is-active' : ''}" type="button" data-admin-tab="${id}" ${active === id ? 'aria-current="page"' : ''}><span class="sidebar-icon" aria-hidden="true">${icon}</span><span>${label}</span><span class="sidebar-chevron" aria-hidden="true">‹</span></button>`).join('')}<div class="sidebar-safety"><span aria-hidden="true">🔐</span><small>${isGeneralSession(session) ? `إدارة ${CLASS_LIST.length} فصول<br />وصفحة التواصل` : `إدارة فصل<br />${escapeHTML(classConfig.name)} فقط`}</small></div></aside><div class="admin-main-panel">${content}</div></div><div class="admin-bottom-notice"><span aria-hidden="true">💾</span> تحفظ التغييرات في بيانات فصل ${escapeHTML(classConfig.name)} على هذا المتصفح بعد الضغط على حفظ.</div></div>`;
+}
+
+// ---------------------------------------------------------------------------
+// Record dialogs
+// ---------------------------------------------------------------------------
 
 function nextOrder(data, type) {
   const items = data[sectionConfig[type].collection] || [];
   return items.reduce((max, item) => Math.max(max, Number(item.order) || 0), 0) + 1;
 }
 
-function renderFormField(field, item, type, isNew) {
-  const value = item?.[field.key] ?? (field.order ? nextOrder(loadData(), type) : field.defaultValue ?? '');
+function renderFormField(field, item, type, classId) {
+  const value = item?.[field.key] ?? (field.order ? nextOrder(loadData(classId), type) : field.defaultValue ?? '');
   if (field.type === 'file') {
     const current = item?.[field.key];
     return `<div class="admin-field file-admin-field"><label class="form-label" for="file-${field.key}">${escapeHTML(field.label)}</label><div class="file-picker-wrap"><input id="file-${field.key}" type="file" name="file:${field.key}" accept="${escapeHTML(field.accept || '*/*')}" /><span class="file-picker-hint">${current ? 'اختاروا ملفا جديدا للاستبدال' : 'اختاروا ملفا من الجهاز'}</span></div>${field.help ? `<small class="field-help">${escapeHTML(field.help)}</small>` : ''}${current ? `<label class="remove-file-option"><input type="checkbox" name="remove:${field.key}" /> إزالة الملف الحالي</label>` : ''}</div>`;
@@ -143,15 +203,16 @@ function renderFormField(field, item, type, isNew) {
   return `<div class="admin-field">${label}${control}${field.help ? `<small class="field-help">${escapeHTML(field.help)}</small>` : ''}</div>`;
 }
 
-function openRecordDialog(root, type, item = null, notify, rerender) {
+function openRecordDialog(root, type, item = null, notify, rerender, classId) {
   const config = sectionConfig[type];
   if (!config) return;
   root.querySelector('.admin-dialog')?.remove();
   const dialog = document.createElement('dialog');
   dialog.className = 'admin-dialog';
   dialog.setAttribute('aria-labelledby', 'record-dialog-title');
+  const classConfig = getClassConfig(classId);
   const scoreFormHint = type === 'students' ? '<p class="score-form-note">يبدأ الطالب من صفر نقطة. يمكن إضافة النقاط لاحقا بخطوات ثابتة من 20 أو 50 أو 100.</p>' : '';
-  dialog.innerHTML = `<div class="dialog-header"><div><span class="eyebrow">${item ? 'تعديل المحتوى' : 'إضافة محتوى جديد'}</span><h2 id="record-dialog-title">${item ? 'تعديل' : 'إضافة'} ${escapeHTML(config.singular)}</h2></div><button class="dialog-close" type="button" data-dialog-close aria-label="إغلاق">×</button></div><form class="record-form" data-record-form>${scoreFormHint}<div class="record-form-fields">${config.fields.map((field) => renderFormField(field, item, type, !item)).join('')}</div><div class="dialog-actions"><button class="button button-soft" type="button" data-dialog-close>إلغاء</button><button class="button button-primary" type="submit">حفظ ${escapeHTML(config.singular)} <span aria-hidden="true">✓</span></button></div></form>`;
+  dialog.innerHTML = `<div class="dialog-header"><div><span class="eyebrow">${item ? 'تعديل المحتوى' : 'إضافة محتوى جديد'} · ${escapeHTML(classConfig.name)}</span><h2 id="record-dialog-title">${item ? 'تعديل' : 'إضافة'} ${escapeHTML(config.singular)}</h2></div><button class="dialog-close" type="button" data-dialog-close aria-label="إغلاق">×</button></div><form class="record-form" data-record-form>${scoreFormHint}<div class="record-form-fields">${config.fields.map((field) => renderFormField(field, item, type, classId)).join('')}</div><div class="dialog-actions"><button class="button button-soft" type="button" data-dialog-close>إلغاء</button><button class="button button-primary" type="submit">حفظ ${escapeHTML(config.singular)} <span aria-hidden="true">✓</span></button></div></form>`;
   root.append(dialog);
   dialog.showModal();
   dialog.querySelectorAll('[data-dialog-close]').forEach((button) => button.addEventListener('click', () => dialog.close()));
@@ -198,14 +259,14 @@ function openRecordDialog(root, type, item = null, notify, rerender) {
           if (field.sourceKey) delete fresh[field.sourceKey];
         }
       }
-      const data = loadData();
+      const data = loadData(classId);
       const collection = config.collection;
       const existingIndex = data[collection].findIndex((record) => record.id === fresh.id);
       if (existingIndex >= 0) data[collection][existingIndex] = fresh;
       else data[collection].push(fresh);
-      saveData(data);
+      saveData(classId, data);
       dialog.close();
-      notify(item ? 'تم حفظ التعديلات بنجاح 🌟' : `تمت إضافة ${config.singular} جديد 🎉`);
+      notify(item ? 'تم حفظ التعديلات بنجاح 🌟' : `تمت إضافة ${config.singular} جديد إلى ${classConfig.name} 🎉`);
       rerender();
     } catch (error) {
       notify(error.message || 'تعذر حفظ التغييرات.', 'error');
@@ -213,14 +274,14 @@ function openRecordDialog(root, type, item = null, notify, rerender) {
   });
 }
 
-function openScoreDialog(root, studentId, toast, rerender) {
-  const student = loadData().students.find((record) => record.id === studentId);
+function openScoreDialog(root, studentId, toast, rerender, classId) {
+  const student = loadData(classId).students.find((record) => record.id === studentId);
   if (!student) return;
   root.querySelector('.admin-dialog')?.remove();
   const dialog = document.createElement('dialog');
   dialog.className = 'admin-dialog score-dialog';
   dialog.setAttribute('aria-labelledby', 'score-dialog-title');
-  dialog.innerHTML = `<div class="dialog-header"><div><span class="eyebrow">نقاط الطالب</span><h2 id="score-dialog-title">${escapeHTML(student.name)}</h2></div><button class="dialog-close" type="button" data-score-close aria-label="إغلاق">×</button></div><div class="score-dialog-body"><div class="score-current"><span>النقاط الحالية</span><strong>${Number(student.score) || 0}</strong></div><p>اختر خطوة ثابتة لإضافة النقاط أو خصمها:</p><div class="score-adjust-grid"><button class="score-step score-step-plus" type="button" data-score-delta="20">+20</button><button class="score-step score-step-plus" type="button" data-score-delta="50">+50</button><button class="score-step score-step-plus" type="button" data-score-delta="100">+100</button><button class="score-step score-step-minus" type="button" data-score-delta="-20">-20</button><button class="score-step score-step-minus" type="button" data-score-delta="-50">-50</button><button class="score-step score-step-minus" type="button" data-score-delta="-100">-100</button></div><small>لا يمكن أن تصبح النقاط أقل من صفر. يتحدث ترتيب الأبطال تلقائيا بعد كل تعديل.</small></div>`;
+  dialog.innerHTML = `<div class="dialog-header"><div><span class="eyebrow">نقاط الطالب · ${escapeHTML(getClassConfig(classId).name)}</span><h2 id="score-dialog-title">${escapeHTML(student.name)}</h2></div><button class="dialog-close" type="button" data-score-close aria-label="إغلاق">×</button></div><div class="score-dialog-body"><div class="score-current"><span>النقاط الحالية</span><strong>${Number(student.score) || 0}</strong></div><p>اختر خطوة ثابتة لإضافة النقاط أو خصمها:</p><div class="score-adjust-grid"><button class="score-step score-step-plus" type="button" data-score-delta="20">+20</button><button class="score-step score-step-plus" type="button" data-score-delta="50">+50</button><button class="score-step score-step-plus" type="button" data-score-delta="100">+100</button><button class="score-step score-step-minus" type="button" data-score-delta="-20">-20</button><button class="score-step score-step-minus" type="button" data-score-delta="-50">-50</button><button class="score-step score-step-minus" type="button" data-score-delta="-100">-100</button></div><small>لا يمكن أن تصبح النقاط أقل من صفر. يتحدث ترتيب الأبطال تلقائيا بعد كل تعديل.</small></div>`;
   root.append(dialog);
   dialog.showModal();
   dialog.querySelector('[data-score-close]')?.addEventListener('click', () => dialog.close());
@@ -228,7 +289,7 @@ function openScoreDialog(root, studentId, toast, rerender) {
   dialog.addEventListener('close', () => dialog.remove(), { once: true });
   dialog.querySelectorAll('[data-score-delta]').forEach((button) => button.addEventListener('click', () => {
     const delta = Number(button.dataset.scoreDelta) || 0;
-    const data = loadData();
+    const data = loadData(classId);
     const record = data.students.find((entry) => entry.id === studentId);
     if (!record) return;
     const nextScore = (Number(record.score) || 0) + delta;
@@ -238,7 +299,7 @@ function openScoreDialog(root, studentId, toast, rerender) {
     }
     record.score = nextScore;
     try {
-      saveData(data);
+      saveData(classId, data);
       dialog.close();
       toast(`تم تحديث النقاط إلى ${nextScore}.`);
       rerender();
@@ -256,147 +317,230 @@ function downloadJson(value, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 1200);
 }
 
-export function bindAdmin(root, { rerender, setTab, toast, navigate }) {
-  if (!boundRoots.has(root)) {
-    boundRoots.add(root);
-    root.addEventListener('click', async (event) => {
+function readContactForm(form) {
+  const formData = new FormData(form);
+  const keys = ['personName', 'role', 'message', 'phone', 'whatsapp', 'email', 'facebook', 'address', 'hours'];
+  return keys.reduce((result, key) => {
+    result[key] = String(formData.get(key) ?? '').trim();
+    return result;
+  }, {});
+}
+
+// ---------------------------------------------------------------------------
+// Bindings
+// ---------------------------------------------------------------------------
+
+export function bindAdmin(root, context) {
+  rootContexts.set(root, {
+    token: {},
+    session: context.session || null,
+    targetClass: context.targetClass,
+    siteData: context.siteData,
+    setTab: context.setTab,
+    setClass: context.setClass,
+    toast: (message, kind) => context.toast?.(message, kind),
+    navigate: (path) => context.navigate?.(path),
+    rerender: () => context.rerender?.(),
+    signIn: (username, password) => context.signIn?.(username, password),
+    landingRoute: (account) => context.landingRoute?.(account),
+    sessionTitle: (account) => context.sessionTitle?.(account),
+    signOut: () => context.onSignOut?.(),
+  });
+
+  if (boundRoots.has(root)) return;
+  boundRoots.add(root);
+
+  root.addEventListener('click', async (event) => {
+    const ctx = rootContexts.get(root);
+    if (!ctx) return;
     const tabButton = event.target.closest('[data-admin-tab]');
     if (tabButton) {
-      setTab(tabButton.dataset.adminTab);
+      ctx.setTab?.(tabButton.dataset.adminTab);
+      return;
+    }
+    const classButton = event.target.closest('[data-admin-class]');
+    if (classButton && ctx.session?.role === 'general') {
+      ctx.setClass?.(classButton.dataset.adminClass);
       return;
     }
     const logout = event.target.closest('[data-admin-logout]');
     if (logout) {
-      window.sessionStorage.removeItem(APP_CONFIG.adminSessionKey);
-      navigate('/home');
-      toast('تم تسجيل الخروج. نراكم قريبا 👋');
+      ctx.signOut();
+      ctx.toast('تم تسجيل الخروج. نراكم قريبا 👋');
+      ctx.navigate('#/');
       return;
     }
     const addButton = event.target.closest('[data-add]');
     if (addButton) {
-      openRecordDialog(root, addButton.dataset.add, null, toast, rerender);
+      openRecordDialog(root, addButton.dataset.add, null, ctx.toast, ctx.rerender, ctx.targetClass);
       return;
     }
     const scoreButton = event.target.closest('[data-score-edit]');
     if (scoreButton) {
-      openScoreDialog(root, scoreButton.dataset.scoreEdit, toast, rerender);
+      openScoreDialog(root, scoreButton.dataset.scoreEdit, ctx.toast, ctx.rerender, ctx.targetClass);
       return;
     }
     const editButton = event.target.closest('[data-edit]');
     if (editButton) {
       const [type, id] = editButton.dataset.edit.split(':');
-      const item = loadData()[sectionConfig[type]?.collection]?.find((entry) => entry.id === id);
-      if (item) openRecordDialog(root, type, item, toast, rerender);
+      const item = loadData(ctx.targetClass)[sectionConfig[type]?.collection]?.find((entry) => entry.id === id);
+      if (item) openRecordDialog(root, type, item, ctx.toast, ctx.rerender, ctx.targetClass);
       return;
     }
     const deleteButton = event.target.closest('[data-delete]');
     if (deleteButton) {
       const [type, id] = deleteButton.dataset.delete.split(':');
       const config = sectionConfig[type];
-      const data = loadData();
+      const data = loadData(ctx.targetClass);
       const list = data[config?.collection] || [];
       const item = list.find((entry) => entry.id === id);
       if (!item) return;
-      if (!window.confirm(`هل تريد حذف «${item.name || item.title || item.glyph}»؟ لا يمكن التراجع عن الحذف.`)) return;
-      const removed = list.filter((entry) => entry.id !== id);
-      data[config.collection] = removed;
+      if (!window.confirm(`هل تريد حذف «${item.name || item.title || item.glyph}» من ${getClassConfig(ctx.targetClass).name}؟ لا يمكن التراجع عن الحذف.`)) return;
+      data[config.collection] = list.filter((entry) => entry.id !== id);
       try {
         for (const field of config.fields.filter((entry) => entry.type === 'file')) {
           if (item[field.key]) await deleteMedia(item[field.key]);
         }
-        saveData(data);
-        toast('تم حذف العنصر.');
-        rerender();
-      } catch (error) { toast(error.message || 'تعذر حذف العنصر.', 'error'); }
+        saveData(ctx.targetClass, data);
+        ctx.toast('تم حذف العنصر.');
+        ctx.rerender();
+      } catch (error) { ctx.toast(error.message || 'تعذر حذف العنصر.', 'error'); }
       return;
     }
     if (event.target.closest('[data-export-backup]')) {
-      const data = loadData();
-      downloadJson({ ...data, _backupNote: 'هذه النسخة تشمل بيانات المحتوى والنصوص فقط، ولا تشمل ملفات الصور أو الصوت المخزنة في المتصفح.' }, 'lahn-content-backup.json');
-      toast('تم تنزيل نسخة المحتوى. تذكروا أنها لا تشمل الملفات المرفوعة.');
+      const data = loadData(ctx.targetClass);
+      downloadJson({ ...data, _backupNote: 'هذه النسخة تشمل بيانات المحتوى والنصوص لفصل واحد فقط، ولا تشمل ملفات الصور أو الصوت المخزنة في المتصفح.' }, `lahn-${ctx.targetClass}-backup.json`);
+      ctx.toast(`تم تنزيل نسخة محتوى ${getClassConfig(ctx.targetClass).name}. تذكروا أنها لا تشمل الملفات المرفوعة.`);
       return;
     }
     if (event.target.closest('[data-reset-demo]')) {
-      if (!window.confirm('إعادة الأمثلة الأصلية؟ ستستبدل الأسماء والمحتويات الحالية ولا يمكن التراجع.')) return;
+      if (!window.confirm(`إعادة أمثلة فصل ${getClassConfig(ctx.targetClass).name} الأصلية؟ ستستبدل الأسماء والمحتويات الحالية لهذا الفصل ولا يمكن التراجع.`)) return;
       try {
-        resetData();
-        toast('عادت أمثلة لحن الأصلية.');
-        rerender();
-      } catch (error) { toast(error.message, 'error'); }
-    }
-    });
-  }
-
-  root.querySelector('[data-admin-login]')?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const username = String(new FormData(form).get('username') || '');
-    const password = String(new FormData(form).get('password') || '');
-    const error = form.querySelector('[data-login-error]');
-    if (username === APP_CONFIG.admin.username && password === APP_CONFIG.admin.password) {
-      window.sessionStorage.setItem(APP_CONFIG.adminSessionKey, 'active');
-      toast('أهلا بكم! لوحة الإدارة جاهزة 🧡');
-      rerender();
+        resetData(ctx.targetClass);
+        ctx.toast(`عادت أمثلة فصل ${getClassConfig(ctx.targetClass).name} الأصلية.`);
+        ctx.rerender();
+      } catch (error) { ctx.toast(error.message, 'error'); }
       return;
     }
-    error.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة. حاولوا مرة أخرى.';
-    error.hidden = false;
-    form.querySelector('[name="password"]').value = '';
-    form.querySelector('[name="password"]').focus();
+    if (event.target.closest('[data-contact-reset]')) {
+      if (!window.confirm('استعادة نموذج بيانات التواصل الأصلي؟ سيستبدل بيانات التواصل الحالية.')) return;
+      try {
+        resetSiteData();
+        ctx.toast('تمت استعادة نموذج بيانات التواصل.');
+        ctx.rerender();
+      } catch (error) { ctx.toast(error.message, 'error'); }
+    }
   });
 
-  root.querySelector('[data-settings-form]')?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const source = String(formData.get('copticSourceUrl') || '').trim();
-    if (source && !safeYouTubeUrl(source)) {
-      toast('أدخلوا رابطا صحيحا من يوتيوب أو اتركوا الخانة فارغة.', 'error');
+  root.addEventListener('submit', (event) => {
+    const ctx = rootContexts.get(root);
+    if (!ctx) return;
+    const loginForm = event.target.closest('[data-admin-login]');
+    if (loginForm) {
+      event.preventDefault();
+      const values = new FormData(loginForm);
+      const account = ctx.signIn(String(values.get('username') || ''), String(values.get('password') || ''));
+      const error = loginForm.querySelector('[data-login-error]');
+      if (!account) {
+        if (error) {
+          error.textContent = 'اسم المستخدم أو كلمة المرور غير صحيحة. حاولوا مرة أخرى.';
+          error.hidden = false;
+        }
+        const password = loginForm.querySelector('[name="password"]');
+        if (password) { password.value = ''; password.focus(); }
+        return;
+      }
+      ctx.toast(`أهلا بكم! ${ctx.sessionTitle(account) || 'لوحة الإدارة جاهزة'} 🧡`);
+      const target = ctx.landingRoute(account) || '#/';
+      if (target === window.location.hash) ctx.rerender();
+      else ctx.navigate(target);
       return;
     }
-    const data = loadData();
-    data.settings.copticSourceUrl = source;
-    data.settings.parentNote = String(formData.get('parentNote') || '').trim();
-    try {
-      saveData(data);
-      toast('تم حفظ الإعدادات.');
-      rerender();
-    } catch (error) { toast(error.message, 'error'); }
+
+    const contactForm = event.target.closest('[data-contact-form]');
+    if (contactForm) {
+      event.preventDefault();
+      if (ctx.session?.role !== 'general') {
+        ctx.toast('صفحة التواصل يحررها المدير العام فقط.', 'error');
+        return;
+      }
+      const contact = readContactForm(contactForm);
+      if (contact.email && !mailtoHref(contact.email)) {
+        ctx.toast('أدخلوا بريدا إلكترونيا صحيحا أو اتركوا الخانة فارغة.', 'error');
+        return;
+      }
+      if (contact.facebook && !facebookHref(contact.facebook)) {
+        ctx.toast('أدخلوا رابط فيسبوك صحيحا أو اتركوا الخانة فارغة.', 'error');
+        return;
+      }
+      try {
+        saveSiteData({ ...ctx.siteData, contact });
+        ctx.toast('تم حفظ بيانات صفحة التواصل، وستظهر مباشرة في #/contact.');
+        ctx.rerender();
+      } catch (error) { ctx.toast(error.message, 'error'); }
+      return;
+    }
+
+    const settingsForm = event.target.closest('[data-settings-form]');
+    if (settingsForm) {
+      event.preventDefault();
+      const formData = new FormData(settingsForm);
+      const source = String(formData.get('copticSourceUrl') || '').trim();
+      if (source && !safeYouTubeUrl(source)) {
+        ctx.toast('أدخلوا رابطا صحيحا من يوتيوب أو اتركوا الخانة فارغة.', 'error');
+        return;
+      }
+      const data = loadData(ctx.targetClass);
+      data.settings.copticSourceUrl = source;
+      data.settings.parentNote = String(formData.get('parentNote') || '').trim();
+      try {
+        saveData(ctx.targetClass, data);
+        ctx.toast(`تم حفظ إعدادات فصل ${getClassConfig(ctx.targetClass).name}.`);
+        ctx.rerender();
+      } catch (error) { ctx.toast(error.message, 'error'); }
+    }
   });
 
-  root.querySelector('[data-import-backup]')?.addEventListener('change', async (event) => {
-    const input = event.currentTarget;
+  root.addEventListener('change', async (event) => {
+    const ctx = rootContexts.get(root);
+    if (!ctx) return;
+    const input = event.target.closest('[data-import-backup]');
+    if (!input) return;
     const file = input.files?.[0];
     if (!file) return;
     try {
       const imported = JSON.parse(await file.text());
       const valid = ['students', 'hymns', 'copticLetters', 'liturgy'].every((key) => Array.isArray(imported[key]));
       if (!valid) throw new Error('ملف النسخة لا يحتوي على أقسام لحن المطلوبة.');
-      if (!window.confirm('سيستبدل هذا الملف كل المحتوى النصي الحالي. هل نتابع؟')) return;
+      if (!window.confirm(`سيستبدل هذا الملف كل محتوى فصل ${getClassConfig(ctx.targetClass).name} الحالي. هل نتابع؟`)) return;
+      const base = getDefaultData(ctx.targetClass);
       const restored = {
-        ...DEFAULT_DATA,
+        ...base,
         students: imported.students,
         hymns: imported.hymns,
         copticLetters: imported.copticLetters,
         liturgy: imported.liturgy,
-        settings: { ...DEFAULT_DATA.settings, ...(imported.settings || {}) },
+        settings: { ...base.settings, ...(imported.settings || {}) },
         progress: imported.progress || { completed: [] },
       };
-      saveData(restored);
-      toast('تم استيراد المحتوى. قد تحتاج الملفات المرفوعة إلى إعادة اختيارها.');
-      rerender();
+      saveData(ctx.targetClass, restored);
+      ctx.toast('تم استيراد المحتوى. قد تحتاج الملفات المرفوعة إلى إعادة اختيارها.');
+      ctx.rerender();
     } catch (error) {
-      toast(error.message || 'تعذر قراءة ملف النسخة.', 'error');
+      ctx.toast(error.message || 'تعذر قراءة ملف النسخة.', 'error');
     } finally {
       input.value = '';
     }
   });
 
-  root.querySelector('[data-admin-search]')?.addEventListener('input', (event) => {
-    const query = event.currentTarget.value.trim().toLocaleLowerCase('ar');
+  root.addEventListener('input', (event) => {
+    const search = event.target.closest('[data-admin-search]');
+    if (!search) return;
+    const query = search.value.trim().toLocaleLowerCase('ar');
     const cards = [...root.querySelectorAll('.admin-item-card')];
     let shown = 0;
     cards.forEach((card) => {
-      const match = !query || card.dataset.searchable.includes(query);
+      const match = !query || (card.dataset.searchable || '').includes(query);
       card.hidden = !match;
       if (match) shown += 1;
     });
