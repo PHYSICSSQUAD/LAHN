@@ -1,5 +1,5 @@
 import { APP_CONFIG, CLASS_LIST, getClassConfig } from './config.js';
-import { escapeHTML, formatTime, classHref } from './utils.js';
+import { escapeHTML, formatTime, classHref, safeLinkUrl, linkKind } from './utils.js';
 
 export function renderSiteBanner() {
   const text = String(APP_CONFIG.siteBanner || '').trim();
@@ -7,10 +7,9 @@ export function renderSiteBanner() {
   return `<div class="site-banner" data-site-banner><p class="site-banner-inner"><span class="site-banner-mark" aria-hidden="true">✝</span><span class="site-banner-text">${escapeHTML(text)}</span><span class="site-banner-mark" aria-hidden="true">✝</span></p></div>`;
 }
 
-export function renderHeader({ active = '', classId = '', session = null } = {}) {
+export function renderHeader({ active = '', classId = '' } = {}) {
   const classConfig = classId ? getClassConfig(classId) : null;
   const homeHref = classId ? classHref(classId, '/home') : '#/';
-  const adminHref = session?.role === 'general' ? '#/admin' : classHref(classId, '/admin');
   const links = [
     { id: 'hymns', href: classHref(classId, '/hymns'), icon: '🎵', label: 'الألحان' },
     { id: 'liturgy', href: classHref(classId, '/liturgy'), icon: '⛪', label: 'الطقس' },
@@ -18,7 +17,6 @@ export function renderHeader({ active = '', classId = '', session = null } = {})
     { id: 'curriculum', href: classHref(classId, '/curriculum'), icon: '📘', label: 'المنهج' },
   ];
   const brandSub = classConfig ? `${classConfig.name} · ${classConfig.arabicName}` : 'اختار فصلك وابدأ';
-  const adminLabel = session ? 'لوحة الإدارة' : 'دخول الإدارة';
   return `${renderSiteBanner()}
     <header class="site-header">
       <div class="header-inner">
@@ -31,7 +29,7 @@ export function renderHeader({ active = '', classId = '', session = null } = {})
         </nav>
         <div class="header-actions">
           <a class="class-switch-link" href="#/"><span aria-hidden="true">🗂️</span><span>الفصول</span></a>
-          <a class="parents-link" href="${adminHref}"><span class="parents-sparkle" aria-hidden="true">✦</span><span>${escapeHTML(adminLabel)}</span><span class="parents-arrow" aria-hidden="true">↙</span></a>
+          <a class="contact-link" href="#/contact"><span aria-hidden="true">✉️</span><span>تواصل معنا</span></a>
         </div>
       </div>
     </header>`;
@@ -46,27 +44,14 @@ export function renderFooter({ classId = '' } = {}) {
         <p>خطوات صغيرة… وفرح كبير 🌟</p>
         <nav class="footer-links" aria-label="روابط سريعة">
           <a class="footer-contact" href="#/contact"><span aria-hidden="true">✉️</span> تواصل معي</a>
-          <a class="footer-admin" href="${classId ? classHref(classId, '/admin') : '#/admin'}">لوحة الإدارة <span class="footer-admin-label">Admin</span><span aria-hidden="true">↗</span></a>
+          <a class="footer-classes" href="#/"><span aria-hidden="true">🗂️</span> كل الفصول</a>
         </nav>
       </div>
-      <div class="footer-note">محتوى تعليمي تجريبي — أضيفوا مواد فصل كل خدمة من لوحة الإدارة.</div>
+      <div class="footer-note">المحتوى مأخوذ من منهج مدرسة الشمامسة، وكلمات الألحان من مصادرها الموثقة في صفحة كل لحن.</div>
     </footer>`;
 }
 
-// Class switcher strip: the general admin uses it inside the admin panel,
-// and it also appears on class pages so switching between classes is one click.
-export function renderClassSwitcher({ selectedClass = '', session = null } = {}) {
-  if (session?.role !== 'general') return '';
-  return `<div class="class-switcher-bar" data-class-switcher role="group" aria-label="تبديل الفصول">
-    <span class="class-switcher-label"><span aria-hidden="true">🗂️</span> تبديل الفصول</span>
-    <div class="class-switcher-list">
-      ${CLASS_LIST.map((item) => `<button class="class-switcher-button ${selectedClass === item.id ? 'is-active' : ''}" type="button" data-admin-class="${item.id}" ${selectedClass === item.id ? 'aria-pressed="true"' : 'aria-pressed="false"'}><span aria-hidden="true">${escapeHTML(item.emoji)}</span><span>${escapeHTML(item.name)}</span></button>`).join('')}
-    </div>
-    <a class="class-switcher-link" href="#/admin">لوحة المدير العام <span aria-hidden="true">←</span></a>
-  </div>`;
-}
-
-// Quick strip for the general admin while browsing a class site.
+// Quick strip to move between the three classes while browsing.
 export function renderVisitorClassBar({ classId = '', page = 'home' } = {}) {
   const target = ['home', 'hymns', 'coptic', 'liturgy', 'curriculum'].includes(page) ? page : 'home';
   return `<div class="visitor-class-bar" role="group" aria-label="تبديل فصول الموقع">
@@ -74,27 +59,46 @@ export function renderVisitorClassBar({ classId = '', page = 'home' } = {}) {
     <div class="visitor-class-list">
       ${CLASS_LIST.map((item) => `<a class="visitor-class-link ${item.id === classId ? 'is-active' : ''}" href="${classHref(item.id, `/${target}`)}"><span aria-hidden="true">${escapeHTML(item.emoji)}</span><span>${escapeHTML(item.name)}</span></a>`).join('')}
     </div>
-    <a class="visitor-class-manage" href="${classHref(classId, '/admin')}">إدارة هذا الفصل <span aria-hidden="true">←</span></a>
   </div>`;
 }
 
 export function mediaArt(item, className = '') {
-  const label = item.title || item.name || item.transliteration || 'صورة تعليمية';
   const icon = item.icon || item.glyph || '🌟';
-  const image = item.imageAsset
-    ? `<img class="art-image" data-asset-id="${escapeHTML(item.imageAsset)}" alt="${escapeHTML(label)}" hidden />`
-    : '';
-  return `<div class="media-art ${className}" aria-hidden="${image ? 'false' : 'true'}"><span class="art-emoji">${escapeHTML(icon)}</span>${image}</div>`;
+  return `<div class="media-art ${className}" aria-hidden="true"><span class="art-emoji">${escapeHTML(icon)}</span></div>`;
 }
 
-export function audioPlayer({ label = 'تسجيل صوتي', assetId = '', src = '', caption = '' } = {}) {
+// ---------------------------------------------------------------------------
+// Source links (مصادر اللحن / الدرس)
+// ---------------------------------------------------------------------------
+
+const KIND_META = {
+  youtube: { icon: '▶️', label: 'يوتيوب' },
+  drive: { icon: '📂', label: 'Google Drive' },
+  pdf: { icon: '📄', label: 'ملف PDF' },
+  site: { icon: '🔗', label: 'موقع' },
+};
+
+export function sourceList(sources = [], className = 'source-list') {
+  const items = (sources || [])
+    .map((source) => ({ ...source, href: safeLinkUrl(source?.url) }))
+    .filter((source) => source.href);
+  if (!items.length) return '';
+  return `<ul class="${className}">${items.map((source) => {
+    const kind = linkKind(source.href);
+    const meta = KIND_META[kind] || KIND_META.site;
+    const external = !source.href.startsWith('assets/');
+    return `<li class="source-item source-${kind}"><a href="${escapeHTML(source.href)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}><span class="source-mark" aria-hidden="true">${meta.icon}</span><span class="source-copy"><strong>${escapeHTML(source.label || meta.label)}</strong><small>${escapeHTML(meta.label)}</small></span><span class="external-mark" aria-hidden="true">↗</span></a></li>`;
+  }).join('')}</ul>`;
+}
+
+export function audioPlayer({ label = 'تسجيل صوتي', src = '', caption = '' } = {}) {
   const validSrc = String(src).startsWith('assets/') ? src : '';
-  if (!assetId && !validSrc) {
-    return `<div class="audio-empty"><span class="audio-empty-icon" aria-hidden="true">🎧</span><div><strong>التسجيل قريبا</strong><small>سيضيف الأهل الصوت من لوحة الإدارة.</small></div></div>`;
+  if (!validSrc) {
+    return `<div class="audio-empty"><span class="audio-empty-icon" aria-hidden="true">🎧</span><div><strong>لا يوجد تسجيل للمدرسة هنا</strong><small>استمعوا للحن من المصادر بصوت المعلم إبراهيم عياد.</small></div></div>`;
   }
   return `
     <div class="audio-player" data-audio-player>
-      <audio preload="metadata" ${assetId ? `data-asset-id="${escapeHTML(assetId)}"` : `src="${escapeHTML(validSrc)}"`}></audio>
+      <audio preload="metadata" src="${escapeHTML(validSrc)}"></audio>
       <button class="audio-play" type="button" data-audio-play aria-label="تشغيل ${escapeHTML(label)}"><span aria-hidden="true">▶</span></button>
       <div class="audio-player-content">
         <div class="audio-player-title"><strong>${escapeHTML(label)}</strong><span class="audio-status">${escapeHTML(caption || 'جاهز للاستماع')}</span></div>
@@ -156,7 +160,7 @@ export function bindAudioPlayers(root = document) {
     audio.addEventListener('play', () => setPlayState(true));
     audio.addEventListener('pause', () => setPlayState(false));
     audio.addEventListener('ended', () => { setPlayState(false); updateTime(); });
-    audio.addEventListener('error', () => { if (status) status.textContent = 'هذا تسجيل تجريبي غير متاح الآن'; });
+    audio.addEventListener('error', () => { if (status) status.textContent = 'تعذر تشغيل هذا التسجيل الآن'; });
     updateTime();
   });
 }

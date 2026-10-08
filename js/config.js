@@ -1,37 +1,34 @@
-// Central place for the demo settings of the multi-class version.
-// Never treat these browser-side values as secrets.
+// Central place for the settings of the multi-class version.
+// The site is read-only for visitors: there is no admin panel and no login.
 export const APP_CONFIG = Object.freeze({
-  // Legacy single-class key. Kept only for a one-time migration into kg1.
+  // Legacy keys from older versions. Kept only so they can be cleaned up once.
   legacyStorageKey: 'lahn-learning-data-v1',
-  // Every class keeps its own learning data under this prefix.
-  classStoragePrefix: 'lahn-class-data-v2:',
-  // Shared site data (contact page and general settings).
-  siteStorageKey: 'lahn-site-data-v1',
+  legacyClassPrefix: 'lahn-class-data-v2:',
+  legacySiteKey: 'lahn-site-data-v1',
+  legacySessionKey: 'lahn-admin-session-v1',
+  // Stars collected by the child, per class.
+  progressStoragePrefix: 'lahn-progress-v1:',
   // Remembers the last class the visitor opened, so old links keep working.
   lastClassKey: 'lahn-last-class-v1',
-  adminSessionKey: 'lahn-admin-session-v1',
   // Institution name shown in the banner strip at the very top of every page.
   siteBanner: 'مدرسة شمامسة كنيسة الشهيد العظيم ابي سيفين بحدائق القبة',
-  // Demo-only general manager account: change here (once) before sharing a demo.
-  admin: Object.freeze({
-    username: 'admin',
-    password: 'ابي سيفين',
-  }),
-  // Demo-only class manager accounts: each one manages its own class only.
-  classAdmins: Object.freeze([
-    Object.freeze({ username: 'babyclassadmin', password: 'babyclass123', classId: 'babyclass' }),
-    Object.freeze({ username: 'kg1admin', password: 'kg1123', classId: 'kg1' }),
-    Object.freeze({ username: 'kg2admin', password: 'kg2123', classId: 'kg2' }),
-  ]),
-  limits: Object.freeze({
-    imageBytes: 8 * 1024 * 1024,
-    audioBytes: 18 * 1024 * 1024,
-    documentBytes: 12 * 1024 * 1024,
-  }),
+});
+
+// Contact details of the school (static content, shown in #/contact).
+export const SITE_CONTACT = Object.freeze({
+  personName: 'خدام مدرسة الشمامسة',
+  role: 'مدرسة شمامسة كنيسة الشهيد العظيم ابي سيفين بحدائق القبة',
+  message: 'يسعدنا أن نستقبل أسئلتكم واقتراحاتكم، وأن نساعد كل أسرة في رحلة التعلم.',
+  phone: '+201005550100',
+  whatsapp: '201005550100',
+  email: 'lahn.school@example.com',
+  facebook: 'https://www.facebook.com/lahn.school',
+  address: 'كنيسة الشهيد العظيم ابي سيفين — حدائق القبة، القاهرة',
+  hours: 'الجمعة والسبت: من 9 صباحا إلى 12 ظهرا',
 });
 
 // The three classes share the same site, but each one has its own theme,
-// mascot, localStorage key and admin account.
+// mascot and seed content.
 export const CLASS_LIST = Object.freeze([
   Object.freeze({
     id: 'babyclass',

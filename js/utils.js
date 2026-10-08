@@ -27,6 +27,30 @@ export function youtubeAnchor(raw, label = 'شاهد على يوتيوب', class
 }
 
 // ---------------------------------------------------------------------------
+// Source links: https links and the PDF files shipped inside assets/
+// ---------------------------------------------------------------------------
+
+export function safeLinkUrl(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  if (value.startsWith('assets/')) return value.includes('..') ? '' : value;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+export function linkKind(url = '') {
+  const value = String(url);
+  if (safeYouTubeUrl(value)) return 'youtube';
+  if (/^https:\/\/(drive|docs)\.google\.com\//i.test(value)) return 'drive';
+  if (/\.pdf(\?|#|$)/i.test(value)) return 'pdf';
+  return 'site';
+}
+
+// ---------------------------------------------------------------------------
 // Class-aware links: every class page lives under #/<class>/<page>
 // ---------------------------------------------------------------------------
 
@@ -107,7 +131,3 @@ export function textParagraphs(text = '') {
     .map((paragraph) => `<p>${escapeHTML(paragraph).replaceAll('\n', '<br>')}</p>`).join('');
 }
 
-export function humanFileSize(bytes = 0) {
-  if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} كيلوبايت`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} ميجابايت`;
-}

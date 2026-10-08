@@ -1,26 +1,22 @@
-import { APP_CONFIG, CLASS_LIST, getClassConfig, isValidClass } from './config.js';
-import { renderAdminPage, bindAdmin } from './admin.js';
+import { CLASS_LIST, SITE_CONTACT, getClassConfig, isValidClass } from './config.js';
 import {
-  renderHeader, renderFooter, mediaArt, audioPlayer, bindAudioPlayers, renderVisitorClassBar,
+  renderHeader, renderFooter, mediaArt, audioPlayer, bindAudioPlayers, renderVisitorClassBar, sourceList,
 } from './components.js';
 import {
-  loadData, saveData, loadSiteData, hydrateMedia, getLastClass, setLastClass, migrateLegacyData,
+  loadData, saveProgress, getLastClass, setLastClass, cleanupLegacyStorage,
 } from './storage.js';
-import { getSession, signIn, signOut, landingRoute, sessionTitle } from './auth.js';
 import {
-  escapeHTML, classHref, sectionForPage, safeYouTubeUrl, sortByOrder, textParagraphs,
-  youtubeAnchor, telHref, whatsappHref, mailtoHref, facebookHref,
+  escapeHTML, classHref, sectionForPage, sortByOrder, textParagraphs,
+  youtubeAnchor, safeYouTubeUrl, telHref, whatsappHref, mailtoHref, facebookHref,
 } from './utils.js';
 
 const root = document.querySelector('#app');
-const CLASS_PAGES = ['home', 'hymns', 'hymn', 'coptic', 'letter', 'liturgy', 'ritual', 'curriculum', 'admin'];
-const LEGACY_PAGES = new Set(['home', 'hymns', 'hymn', 'coptic', 'letter', 'liturgy', 'ritual', 'curriculum', 'admin']);
+const CLASS_PAGES = ['home', 'hymns', 'hymn', 'coptic', 'letter', 'liturgy', 'ritual', 'curriculum'];
+const LEGACY_PAGES = new Set([...CLASS_PAGES, 'admin']);
 const PAGE_TITLES = {
   home: 'الرئيسية', hymns: 'الألحان', hymn: 'لحن', coptic: 'القبطي', letter: 'حرف قبطي',
-  liturgy: 'الطقس', ritual: 'درس من الطقس', admin: 'الإدارة',
+  liturgy: 'الطقس', ritual: 'درس من الطقس', curriculum: 'المنهج',
 };
-let adminTab = 'overview';
-let adminClass = getLastClass() || 'kg1';
 let pendingLegacyPage = '';
 let pendingLegacyQuery = '';
 let toastTimer;
@@ -45,9 +41,11 @@ function resolveRoute() {
   if (!segments.length) return { kind: 'picker', classId: '', page: '', params };
   const [first, second] = segments;
   if (first === 'contact') return { kind: 'contact', classId: '', page: 'contact', params };
-  if (first === 'admin') return { kind: 'admin', classId: '', page: 'admin', params };
+  // Old admin links simply go back to the class picker: there is no admin anymore.
+  if (first === 'admin') return { kind: 'retired-admin', classId: '', page: '', params };
   if (isValidClass(first)) {
     const page = second || 'home';
+    if (page === 'admin') return { kind: 'retired-admin', classId: first, page: '', params };
     if (!CLASS_PAGES.includes(page)) return { kind: 'notfound', classId: first, page, params };
     return { kind: 'page', classId: first, page, params };
   }
@@ -59,8 +57,7 @@ function replaceHash(hash) {
   const target = hash.startsWith('#') ? hash : `#${hash}`;
   if (window.location.hash === target) return;
   if (typeof window.location.replace === 'function') {
-    const { href, origin, pathname, search } = window.location;
-    void href;
+    const { origin, pathname, search } = window.location;
     window.location.replace(`${origin}${pathname}${search}${target}`);
   } else {
     window.location.hash = target;
@@ -107,6 +104,10 @@ function completionButton(collection, id, data) {
   return `<button class="complete-button ${done ? 'is-complete' : ''}" type="button" data-complete="${escapeHTML(key)}" aria-pressed="${done ? 'true' : 'false'}"><span aria-hidden="true">${done ? '⭐' : '☆'}</span><span>${done ? 'أحسنت! هذه الرحلة مكتملة' : 'أنهيت التعلم؟ اجمع نجمة!'}</span></button>`;
 }
 
+function lyricsBlock(text) {
+  return escapeHTML(String(text || '')).replaceAll('\n', '<br>');
+}
+
 // ---------------------------------------------------------------------------
 // Class picker (#/)
 // ---------------------------------------------------------------------------
@@ -134,30 +135,20 @@ function renderPicker() {
     <section class="picker-hero">
       <span class="eyebrow"><span class="hero-kicker-dot" aria-hidden="true"></span> مدرسة الشمامسة</span>
       <h1>اختاروا الفصل، <span>وابدأوا الفرح</span> 🎈</h1>
-      <p>كل فصل له ألحانه وحروفه ودروسه، ولوحة إدارة خاصة به. اختاروا من البطاقات لتبدأوا.</p>
+      <p>كل فصل له ألحانه وحروفه ودروسه، وكلمات كل لحن بالعربي والقبطي المعرب مع مصادره.</p>
     </section>
     <section class="picker-section" aria-labelledby="picker-title">
       <div class="section-heading">
-        <div><span class="eyebrow">الفصول المتاحة</span><h2 id="picker-title">إلى أي فصل ندخل اليوم؟</h2><p>ثلاثة فصول، ولوحة إدارة عامة واحدة</p></div>
+        <div><span class="eyebrow">الفصول المتاحة</span><h2 id="picker-title">إلى أي فصل ندخل اليوم؟</h2><p>ثلاثة فصول من منهج مدرسة الشمامسة</p></div>
         <span class="heading-doodle" aria-hidden="true">✿</span>
       </div>
       <div class="class-picker-grid">
         ${CLASS_LIST.map((classConfig, index) => renderClassCard(classConfig, index)).join('')}
-        <a class="picker-card picker-admin" href="#/admin" style="--card-index:3">
-          <span class="picker-card-glow" aria-hidden="true"></span>
-          <span class="picker-card-icon" aria-hidden="true">🔐</span>
-          <span class="picker-card-body">
-            <strong>Admin</strong>
-            <small class="picker-card-arabic">لوحة الإدارة</small>
-            <small class="picker-card-text">المدير العام ومديرو الفصول فقط</small>
-          </span>
-          <span class="picker-card-action">تسجيل الدخول <span aria-hidden="true">←</span></span>
-        </a>
       </div>
     </section>
     <section class="picker-note">
       <span aria-hidden="true">🧡</span>
-      <p>لو مش متأكد، اختار الفصل اللي فيه ابنك. كل البيانات تفضل محفوظة على الجهاز ده لكل فصل لوحده.</p>
+      <p>لو مش متأكد، اختار الفصل اللي فيه ابنك. كل لحن فيه الكلام عربي وقبطي معرب، ورابط سماعه بصوت المعلم إبراهيم عياد.</p>
     </section>
   </div>`;
 }
@@ -175,9 +166,8 @@ function contactRow({ icon, label, value, href = '', external = false }) {
   return `<li class="contact-row"><span class="contact-icon" aria-hidden="true">${icon}</span><span class="contact-copy"><small>${escapeHTML(label)}</small>${content}</span></li>`;
 }
 
-function renderContact(ctx, siteData) {
-  const contact = siteData.contact || {};
-  const general = ctx.session?.role === 'general';
+function renderContact() {
+  const contact = SITE_CONTACT;
   const rows = [
     contactRow({ icon: '📞', label: 'هاتف', value: contact.phone, href: telHref(contact.phone) }),
     contactRow({ icon: '💬', label: 'واتساب', value: contact.whatsapp, href: whatsappHref(contact.whatsapp), external: true }),
@@ -190,22 +180,15 @@ function renderContact(ctx, siteData) {
     ${pageIntro('تواصل معي', 'صفحة التواصل', 'يسعدنا سماعكم في أي وقت، لأي سؤال أو اقتراح.', '✉️')}
     <section class="contact-card">
       <div class="contact-card-head">
-        <span class="contact-avatar" aria-hidden="true">🧑‍🏫</span>
-        <div>
-          <h2>${escapeHTML(contact.personName || 'خدام المدرسة')}</h2>
-          <p class="contact-role">${escapeHTML(contact.role || APP_CONFIG.siteBanner)}</p>
-        </div>
+        <span class="contact-avatar" aria-hidden="true">🕊️</span>
+        <div><span class="eyebrow">خدمة مدرسة الشمامسة</span><h2>${escapeHTML(contact.personName)}</h2><p class="contact-role">${escapeHTML(contact.role)}</p></div>
       </div>
-      ${contact.message ? `<p class="contact-message">${escapeHTML(contact.message)}</p>` : ''}
+      <p class="contact-message">${escapeHTML(contact.message)}</p>
       <ul class="contact-list">${rows || '<li class="contact-row"><span class="contact-copy"><small>لا توجد بيانات بعد</small></span></li>'}</ul>
       <div class="contact-actions">
         ${telHref(contact.phone) ? `<a class="button button-primary" href="${escapeHTML(telHref(contact.phone))}"><span aria-hidden="true">📞</span> اتصل بنا</a>` : ''}
         ${whatsappHref(contact.whatsapp) ? `<a class="button button-soft" href="${escapeHTML(whatsappHref(contact.whatsapp))}" target="_blank" rel="noopener noreferrer"><span aria-hidden="true">💬</span> راسلنا على واتساب</a>` : ''}
         ${mailtoHref(contact.email) ? `<a class="button button-soft" href="${escapeHTML(mailtoHref(contact.email))}"><span aria-hidden="true">✉️</span> أرسل بريدا</a>` : ''}
-      </div>
-      <div class="contact-foot">
-        <span class="contact-note">${general ? 'يمكنكم تعديل هذه البيانات من قسم «صفحة التواصل» في لوحة المدير العام.' : 'تُحدَّث هذه البيانات من المدير العام للمدرسة.'}</span>
-        ${general ? '<a class="text-link" href="#/admin">تعديل بيانات التواصل <span aria-hidden="true">←</span></a>' : ''}
       </div>
     </section>
     <div class="soft-callout callout-parent"><span aria-hidden="true">🕊️</span><p>رسالتكم تصل إلى خدام المدرسة، ونسعد بخدمتكم.</p></div>
@@ -225,7 +208,7 @@ function renderHome(ctx, data) {
         <div class="hero-copy">
           <span class="hero-kicker"><span class="hero-kicker-dot"></span> ${escapeHTML(classConfig.name)} · رحلة ممتعة للعائلة كلها</span>
           <h1>أهلا يا بطل!<br /><span>جاهز نكتشف؟</span></h1>
-          <p>نرنم، نتعلم حروفنا، ونكتشف أسرار الكنيسة… خطوة صغيرة كل يوم 💛</p>
+          <p>نرنم بالعربي والقبطي، نتعلم حروفنا، ونكتشف أسرار الكنيسة… خطوة صغيرة كل يوم 💛</p>
           <div class="hero-actions">
             <a class="button button-primary button-large" href="${ctx.href('/hymns')}">هيا نبدأ <span aria-hidden="true">←</span></a>
             <div class="hero-progress"><span class="progress-star" aria-hidden="true">⭐</span><span><strong>${completedCount}</strong><small>نجمة في رحلتك</small></span></div>
@@ -251,7 +234,7 @@ function renderHome(ctx, data) {
         <div class="destination-grid">
           <a class="destination-card destination-hymns" href="${ctx.href('/hymns')}">
             <span class="destination-number">01</span><span class="destination-art" aria-hidden="true"><span>🎵</span><i>♪</i><b>♫</b></span>
-            <span class="destination-body"><strong>الألحان</strong><small>نسمع ونرنم معا</small></span><span class="round-arrow" aria-hidden="true">←</span>
+            <span class="destination-body"><strong>الألحان</strong><small>عربي وقبطي معرب</small></span><span class="round-arrow" aria-hidden="true">←</span>
           </a>
           <a class="destination-card destination-liturgy" href="${ctx.href('/liturgy')}">
             <span class="destination-number">02</span><span class="destination-art" aria-hidden="true"><span>⛪</span><i>✦</i><b>☁</b></span>
@@ -265,7 +248,7 @@ function renderHome(ctx, data) {
       </section>
 
       <section class="home-lower-grid">
-        <aside class="parent-note-card"><div class="parent-note-top"><span class="parent-note-icon" aria-hidden="true">🧡</span><span class="mini-label">${escapeHTML(classConfig.arabicName)}</span></div><h2>لحظة تعلم…<br /><span>تصير ذكرى حلوة.</span></h2><p>${escapeHTML(data.settings?.parentNote || 'اختاروا محطة، واستمتعوا بها معا.')}</p><a href="${ctx.href('/admin')}" class="text-link">تسجيل دخول ${escapeHTML(classConfig.name)} <span aria-hidden="true">←</span></a><div class="parent-note-doodle" aria-hidden="true">✿</div></aside>
+        <aside class="parent-note-card"><div class="parent-note-top"><span class="parent-note-icon" aria-hidden="true">🧡</span><span class="mini-label">${escapeHTML(classConfig.arabicName)}</span></div><h2>لحظة تعلم…<br /><span>تصير ذكرى حلوة.</span></h2><p>${escapeHTML(data.settings?.parentNote || 'اختاروا محطة، واستمتعوا بها معا.')}</p><a href="${ctx.href('/curriculum')}" class="text-link">شوف منهج ${escapeHTML(classConfig.name)} <span aria-hidden="true">←</span></a><div class="parent-note-doodle" aria-hidden="true">✿</div></aside>
       </section>
 
       <section class="home-encouragement"><span class="encouragement-sun" aria-hidden="true">🌞</span><div><strong>أنت تتعلم شيئا جديدا كل يوم!</strong><small>خذ نفسا، اختر محطة، وابدأ مغامرتك.</small></div><span class="encouragement-stars" aria-hidden="true">✦　✦　✦</span></section>
@@ -274,26 +257,34 @@ function renderHome(ctx, data) {
 
 function renderHymns(ctx, data) {
   const items = sortByOrder(data.hymns || []);
-  return `<div class="content-page page-enter">${pageIntro(`محطة النغمات · ${ctx.classConfig.name}`, 'الألحان', 'اسمع اللحن، اقرأ كلماته، وغن مع من تحب.', '🎵')}
-    ${items.length ? `<div class="item-grid hymn-grid">${items.map((item, index) => `<a class="learning-card hymn-card" href="${ctx.href('/hymn', { id: item.id })}" style="--card-index:${index}">${mediaArt(item, 'card-art tone-art')}<span class="card-topline"><span class="card-tag">${item.demo ? 'مثال تجريبي' : 'لحن'}</span><span class="card-arrow" aria-hidden="true">←</span></span><h2>${escapeHTML(item.title)}</h2><p>${escapeHTML(item.description || 'لحن جميل لنتعلمه معا.')}</p><span class="card-action">اكتشف اللحن <span aria-hidden="true">↙</span></span></a>`).join('')}</div>` : emptyState('🎶', 'قريبا نرنم معا', 'سيضيف الأهل الألحان من لوحة الإدارة.', ctx.href('/admin'), 'إضافة لحن')}
-    <div class="soft-callout callout-song"><span aria-hidden="true">🎧</span><p>ارتد سماعاتك أو استمعوا معا بصوت هادئ ومريح.</p></div>
+  return `<div class="content-page page-enter">${pageIntro(`محطة النغمات · ${ctx.classConfig.name}`, 'الألحان', 'اسمع اللحن، اقرأ كلماته بالعربي والقبطي المعرب، وغن مع من تحب.', '🎵')}
+    ${items.length ? `<div class="item-grid hymn-grid">${items.map((item, index) => `<a class="learning-card hymn-card" href="${ctx.href('/hymn', { id: item.id })}" style="--card-index:${index}">${mediaArt(item, 'card-art tone-art')}<span class="card-topline"><span class="card-tag">لحن</span><span class="card-arrow" aria-hidden="true">←</span></span><h2>${escapeHTML(item.title)}</h2>${item.copticTitle ? `<span class="card-coptic-title">${escapeHTML(item.copticTitle)}</span>` : ''}<p>${escapeHTML(item.description || 'لحن جميل لنتعلمه معا.')}</p><span class="card-action">اكتشف اللحن <span aria-hidden="true">↙</span></span></a>`).join('')}</div>` : emptyState('🎶', 'قريبا نرنم معا', 'لا توجد ألحان في هذا الفصل حاليا.', ctx.href('/home'), 'الرئيسية')}
+    <div class="soft-callout callout-song"><span aria-hidden="true">🎧</span><p>كل لحن فيه رابط لسماعه بصوت المعلم إبراهيم عياد، ومصادر كلماته.</p></div>
   </div>`;
 }
 
 function renderHymnDetail(ctx, data, id) {
   const item = (data.hymns || []).find((hymn) => hymn.id === id);
   if (!item) return `<div class="content-page page-enter">${emptyState('🎵', 'لم نجد هذا اللحن', 'ربما تغير الرابط أو حذف اللحن.', ctx.href('/hymns'), 'العودة إلى الألحان')}</div>`;
-  const primaryPlayer = audioPlayer({ label: 'اسمع اللحن', assetId: item.audioAsset, src: item.audioSrc, caption: item.demo ? 'نغمة تجريبية — ليست تسجيلا كنسيا' : 'التسجيل الأصلي' });
-  const ownPlayer = audioPlayer({ label: 'تسجيلي', assetId: item.recordingAsset, src: item.recordingSrc, caption: item.demo ? 'ملف تجريبي — أضف تسجيلكم الخاص' : 'تسجيل خاص' });
-  const source = safeYouTubeUrl(item.youtubeUrl);
+  const ayadUrl = safeYouTubeUrl(item.ayad?.url);
+  const sources = sourceList(item.sources);
   return `<div class="content-page detail-page page-enter">
     <div class="back-row"><a class="back-button" href="${ctx.href('/hymns')}"><span aria-hidden="true">→</span> رجوع إلى الألحان</a><a class="quiet-home" href="${ctx.href('/home')}">الرئيسية</a></div>
-    <section class="detail-hero hymn-detail-hero"><div class="detail-hero-copy"><span class="eyebrow">محطة الألحان · ${item.demo ? 'محتوى تجريبي' : 'لنتعلم معا'}</span><h1>${escapeHTML(item.title)}</h1><p>${escapeHTML(item.description || '')}</p><div class="detail-hero-badges"><span>🎧 نستمع</span><span>📖 نقرأ</span><span>💛 نتعلم معا</span></div></div><div class="detail-hero-art">${mediaArt(item, 'detail-art tone-art')}<span class="detail-orbit orbit-one">♪</span><span class="detail-orbit orbit-two">✦</span></div></section>
+    <section class="detail-hero hymn-detail-hero"><div class="detail-hero-copy"><span class="eyebrow">محطة الألحان · لنتعلم معا</span><h1>${escapeHTML(item.title)}</h1>${item.copticTitle ? `<p class="detail-coptic-title">${escapeHTML(item.copticTitle)}</p>` : ''}<p>${escapeHTML(item.description || '')}</p><div class="detail-hero-badges"><span>🎧 نستمع</span><span>📖 عربي وقبطي معرب</span><span>🔗 مصادر موثقة</span></div></div><div class="detail-hero-art">${mediaArt(item, 'detail-art tone-art')}<span class="detail-orbit orbit-one">♪</span><span class="detail-orbit orbit-two">✦</span></div></section>
+    <article class="content-tile lyrics-tile">
+      <div class="tile-heading"><span class="tile-icon lyrics-icon">📖</span><div><span class="eyebrow">اقرأ وردد</span><h2>كلام اللحن</h2></div></div>
+      <div class="lyrics-columns">
+        <div class="lyrics-column lyrics-arabic"><h3><span aria-hidden="true">🇪🇬</span> عربي</h3><div class="hymn-lyrics">${lyricsBlock(item.lyricsArabic || 'لم تضف كلمات عربية بعد.')}</div></div>
+        <div class="lyrics-column lyrics-coptic"><h3><span aria-hidden="true">Ⲁ</span> قبطي معرب</h3><div class="hymn-lyrics hymn-lyrics-coptic">${lyricsBlock(item.lyricsCoptic || 'لم تضف الكلمات القبطية المعربة بعد.')}</div></div>
+      </div>
+      <small class="tiny-disclaimer">«القبطي المعرب» هو نطق الكلمات القبطية مكتوبا بحروف عربية ليسهل ترديده مع الأطفال.</small>
+    </article>
     <div class="hymn-detail-grid">
-      <article class="content-tile audio-tile"><div class="tile-heading"><span class="tile-icon tone-icon">🎧</span><div><span class="eyebrow">استمعوا معا</span><h2>اسمع اللحن</h2></div></div>${primaryPlayer}<p class="tiny-disclaimer">${item.demo ? 'المقطع صوت اختباري قصير، وليس تسجيل اللحن الحقيقي.' : 'استمعوا بهدوء وجربوا ترديد اللحن.'}</p></article>
-      <article class="content-tile source-tile"><div class="tile-heading"><span class="tile-icon source-icon">▶️</span><div><span class="eyebrow">مصدر خارجي</span><h2>شاهد المصدر</h2></div></div><p>شاهدوا الشرح أو التسجيل على يوتيوب مع أحد الوالدين.</p>${source ? youtubeAnchor(item.youtubeUrl, 'افتح المصدر على يوتيوب', 'button button-youtube button-wide') : '<div class="audio-empty"><span>🔎</span><div><strong>سيضاف المصدر قريبا</strong><small>يمكن إضافته من لوحة الإدارة.</small></div></div>'}<small class="tiny-disclaimer">روابط الأمثلة تفتح نتائج بحث يوتيوب، ويمكن استبدالها بمصدر محدد.</small></article>
-      <article class="content-tile lyrics-tile"><div class="tile-heading"><span class="tile-icon lyrics-icon">📖</span><div><span class="eyebrow">اقرأ وردد</span><h2>الكلام</h2></div></div><div class="hymn-lyrics">${escapeHTML(item.lyrics || 'سيضيف الأهل كلمات اللحن هنا.').replaceAll('\n', '<br>')}</div></article>
-      <article class="content-tile recording-tile"><div class="tile-heading"><span class="tile-icon recording-icon">🎙️</span><div><span class="eyebrow">صوت الأسرة</span><h2>تسجيلي</h2></div></div>${ownPlayer}<p class="tiny-disclaimer">سجلوا اللحن بصوتكم وأضيفوه من لوحة الإدارة.</p></article>
+      <article class="content-tile ayad-tile"><div class="tile-heading"><span class="tile-icon source-icon">▶️</span><div><span class="eyebrow">نفس اللحن بصوت</span><h2>المعلم إبراهيم عياد</h2></div></div>${ayadUrl
+        ? `<p>${escapeHTML(item.ayad?.label || 'استمعوا للحن بصوت المعلم إبراهيم عياد.')}</p>${youtubeAnchor(ayadUrl, 'استمع بصوت المعلم إبراهيم عياد', 'button button-youtube button-wide')}`
+        : '<div class="audio-empty"><span>🔎</span><div><strong>التسجيل غير متاح حاليا</strong><small>راجعوا المصادر بالأسفل.</small></div></div>'}</article>
+      <article class="content-tile audio-tile"><div class="tile-heading"><span class="tile-icon tone-icon">🎧</span><div><span class="eyebrow">تسجيل المدرسة</span><h2>اسمع اللحن</h2></div></div>${audioPlayer({ label: 'اسمع اللحن', src: item.audioSrc, caption: 'تسجيل المدرسة' })}<p class="tiny-disclaimer">استمعوا بهدوء وجربوا ترديد اللحن.</p></article>
+      <article class="content-tile sources-tile"><div class="tile-heading"><span class="tile-icon worksheet-icon">🔗</span><div><span class="eyebrow">من أين جاء الكلام؟</span><h2>مصادر اللحن</h2></div></div>${sources || '<p>لا توجد مصادر مسجلة لهذا اللحن.</p>'}</article>
       <article class="content-tile notes-tile"><div class="tile-heading"><span class="tile-icon notes-icon">📝</span><div><span class="eyebrow">معلومة لطيفة</span><h2>ملاحظات</h2></div></div><p>${escapeHTML(item.notes || 'لا توجد ملاحظات بعد.')}</p></article>
     </div>
     <div class="detail-complete-row">${completionButton('hymns', item.id, data)}<a class="button button-soft" href="${ctx.href('/hymns')}">اختر لحنا آخر <span aria-hidden="true">←</span></a></div>
@@ -302,11 +293,11 @@ function renderHymnDetail(ctx, data, id) {
 
 function renderCoptic(ctx, data) {
   const letters = sortByOrder(data.copticLetters || []);
-  const sourceHref = safeYouTubeUrl(data.settings?.copticSourceUrl);
+  const sources = sourceList(data.settings?.copticSources);
   return `<div class="content-page page-enter">${pageIntro(`محطة الحروف · ${ctx.classConfig.name}`, 'القبطي', 'كل حرف له شكل وصوت وحكاية صغيرة. هيا نتعرف إليها!', 'Ⲁⲃⲅ')}
-    <div class="coptic-tip"><span class="coptic-tip-fish" aria-hidden="true"><img src="assets/images/coptic-fish.svg" alt="" /></span><p>صديقتنا السمكة القبطية تساعدنا على اكتشاف الحروف. اضغط على الحرف لسماع الصوت وقراءة المثال.</p><span class="coptic-tip-coptic" aria-hidden="true">Ⲁ Ⲃ Ⲅ</span></div>
-    ${letters.length ? `<div class="letter-grid">${letters.map((letter, index) => `<a class="letter-card" href="${ctx.href('/letter', { id: letter.id })}" style="--card-index:${index}"><span class="letter-glyph" lang="cop">${escapeHTML(letter.glyph || 'Ⲁ')}</span><span class="letter-name">${escapeHTML(letter.transliteration || letter.name || 'حرف جديد')}</span><span class="letter-card-arrow" aria-hidden="true">↙</span></a>`).join('')}</div>` : emptyState('Ⲁ', 'الحروف ستصل قريبا', 'يمكن إضافة حروف من لوحة الإدارة.', ctx.href('/admin'), 'إضافة حرف')}
-    <section class="youtube-banner coptic-source-banner"><span class="youtube-banner-art" aria-hidden="true">📺</span><div><span class="eyebrow">شاهدوا وتعلموا</span><h2>شرح القبطي مع الأسرة</h2><p>رابط تعليمي يضيفه الأهل. روابط العرض الحالية بحث تجريبي على يوتيوب.</p></div>${sourceHref ? youtubeAnchor(data.settings.copticSourceUrl, 'شاهد شرح القبطي', 'button button-youtube') : `<a class="button button-soft" href="${ctx.href('/admin')}">أضف رابطا من لوحة الإدارة</a>`}</section>
+    <div class="coptic-tip"><span class="coptic-tip-fish" aria-hidden="true"><img src="assets/images/coptic-fish.svg" alt="" /></span><p>صديقتنا السمكة القبطية تساعدنا على اكتشاف الحروف. اضغط على الحرف لقراءة المثال وطباعة ورقة العمل.</p><span class="coptic-tip-coptic" aria-hidden="true">Ⲁ Ⲃ Ⲅ</span></div>
+    ${letters.length ? `<div class="letter-grid">${letters.map((letter, index) => `<a class="letter-card" href="${ctx.href('/letter', { id: letter.id })}" style="--card-index:${index}"><span class="letter-glyph" lang="cop">${escapeHTML(letter.glyph || 'Ⲁ')}</span><span class="letter-name">${escapeHTML(letter.transliteration || letter.name || 'حرف جديد')}</span><span class="letter-card-arrow" aria-hidden="true">↙</span></a>`).join('')}</div>` : emptyState('Ⲁ', 'الحروف ستصل قريبا', 'لا توجد حروف في هذا الفصل حاليا.', ctx.href('/home'), 'الرئيسية')}
+    <article class="content-tile sources-tile coptic-sources"><div class="tile-heading"><span class="tile-icon worksheet-icon">🔗</span><div><span class="eyebrow">مصادر منهج القبطي</span><h2>كتاب الحروف وترنيمتها</h2></div></div>${sources}</article>
   </div>`;
 }
 
@@ -315,18 +306,16 @@ function renderLetterDetail(ctx, data, id) {
   const index = letters.findIndex((letter) => letter.id === id);
   const item = letters[index];
   if (!item) return `<div class="content-page page-enter">${emptyState('Ⲁ', 'لم نجد هذا الحرف', 'ربما تغير الرابط أو حذف الحرف.', ctx.href('/coptic'), 'العودة إلى الحروف')}</div>`;
-  const audio = audioPlayer({ label: `نطق حرف ${item.transliteration || item.name || ''}`, assetId: item.audioAsset, src: item.audioSrc, caption: item.demo ? 'نغمة تجريبية — ليست نطقا' : 'تسجيل النطق' });
   const previous = letters[index - 1];
   const next = letters[index + 1];
   return `<div class="content-page detail-page page-enter letter-detail-page">
     <div class="back-row"><a class="back-button" href="${ctx.href('/coptic')}"><span aria-hidden="true">→</span> رجوع إلى الحروف</a><a class="quiet-home" href="${ctx.href('/home')}">الرئيسية</a></div>
-    <section class="letter-hero"><div class="letter-hero-copy"><span class="eyebrow">حرف جديد · ${escapeHTML(item.transliteration || '')}</span><h1>هيا نتعرف على <span>${escapeHTML(item.name || item.transliteration || 'الحرف')}</span></h1><p>انظر إلى الحرف، اسمع صوته، وجرب كتابته مع شخص كبير.</p><span class="demo-pill">${item.demo ? 'مثال تعليمي قابل للتعديل' : 'درس الحرف'}</span></div><div class="letter-hero-side"><div class="giant-letter" lang="cop" aria-label="حرف ${escapeHTML(item.transliteration || '')}">${escapeHTML(item.glyph)}</div>${item.imageAsset ? mediaArt(item, 'letter-image-art') : ''}</div><span class="letter-hero-sparkle" aria-hidden="true">✦</span></section>
+    <section class="letter-hero"><div class="letter-hero-copy"><span class="eyebrow">حرف جديد · ${escapeHTML(item.transliteration || '')}</span><h1>هيا نتعرف على <span>${escapeHTML(item.name || item.transliteration || 'الحرف')}</span></h1><p>انظر إلى الحرف، اقرأ اسمه، وجرب كتابته مع شخص كبير.</p></div><div class="letter-hero-side"><div class="giant-letter" lang="cop" aria-label="حرف ${escapeHTML(item.transliteration || '')}">${escapeHTML(item.glyph)}</div></div><span class="letter-hero-sparkle" aria-hidden="true">✦</span></section>
     <div class="letter-learning-grid">
-      <article class="content-tile pronunciation-tile"><div class="tile-heading"><span class="tile-icon tone-icon">🔊</span><div><span class="eyebrow">جرب أن تسمع</span><h2>النطق</h2></div></div>${audio}<p class="tiny-disclaimer">${item.demo && item.audioSrc ? 'الصوت المرفق تجريبي، وليس نطقا صحيحا للحرف.' : escapeHTML(item.note || (item.audioAsset ? 'استمعوا إلى صوت الحرف وكرروا معا.' : 'يمكن إضافة تسجيل النطق من لوحة الإدارة.'))}</p></article>
-      <article class="content-tile example-tile"><div class="tile-heading"><span class="tile-icon example-icon">🔤</span><div><span class="eyebrow">كلمة للتدرب</span><h2>مثال وكلمة</h2></div></div><div class="example-word" lang="cop">${escapeHTML(item.word || '…')}</div><p class="example-translation">${escapeHTML(item.translation || 'سيضيف المعلم مثالا مناسبا لهذا الحرف.')}</p><span class="practice-dots" aria-hidden="true">●　●　●</span></article>
-      <article class="content-tile worksheet-tile"><div class="tile-heading"><span class="tile-icon worksheet-icon">🖨️</span><div><span class="eyebrow">وقت التلوين والكتابة</span><h2>ورقة عمل</h2></div></div><p>اطبع ورقة جميلة، ثم تتبع الحرف بإصبعك أو بقلمك.</p><button class="button button-primary print-button" type="button" data-print-work><span aria-hidden="true">🖨️</span> اطبع الورقة</button><a class="button button-soft worksheet-download" data-asset-id="${escapeHTML(item.worksheetAsset || '')}" data-asset-link hidden download="ورقة-${escapeHTML(item.glyph)}.pdf"><span aria-hidden="true">⬇️</span> تنزيل ملف إضافي</a></article>
-      ${safeYouTubeUrl(item.youtubeUrl) ? `<article class="content-tile letter-source-tile"><div class="tile-heading"><span class="tile-icon source-icon">▶️</span><div><span class="eyebrow">مصدر إضافي</span><h2>شاهد شرح الحرف</h2></div></div>${youtubeAnchor(item.youtubeUrl, 'شاهدوا على يوتيوب', 'button button-youtube button-wide')}</article>` : ''}
-      <article class="content-tile parent-tip-tile"><div class="tile-heading"><span class="tile-icon notes-icon">💛</span><div><span class="eyebrow">تعلم معا</span><h2>ملاحظة للأهل</h2></div></div><p>${escapeHTML(item.note && !item.audioSrc ? item.note : 'شجع الطفل على النظر إلى شكل الحرف ورسمه في الهواء. يمكن للأهل تعديل المثال والتسجيل من لوحة الإدارة.')}</p></article>
+      <article class="content-tile example-tile"><div class="tile-heading"><span class="tile-icon example-icon">🔤</span><div><span class="eyebrow">كلمة للتدرب</span><h2>مثال وكلمة</h2></div></div><div class="example-word" lang="cop">${escapeHTML(item.word || '…')}</div><p class="example-translation">${escapeHTML(item.translation || 'سنضيف مثالا مناسبا لهذا الحرف.')}</p><span class="practice-dots" aria-hidden="true">●　●　●</span></article>
+      <article class="content-tile worksheet-tile"><div class="tile-heading"><span class="tile-icon worksheet-icon">🖨️</span><div><span class="eyebrow">وقت التلوين والكتابة</span><h2>ورقة عمل</h2></div></div><p>اطبع ورقة جميلة، ثم تتبع الحرف بإصبعك أو بقلمك.</p><button class="button button-primary print-button" type="button" data-print-work><span aria-hidden="true">🖨️</span> اطبع الورقة</button></article>
+      <article class="content-tile sources-tile"><div class="tile-heading"><span class="tile-icon source-icon">🔗</span><div><span class="eyebrow">من أين نتعلم؟</span><h2>مصادر الحرف</h2></div></div>${sourceList(item.sources)}</article>
+      <article class="content-tile parent-tip-tile"><div class="tile-heading"><span class="tile-icon notes-icon">💛</span><div><span class="eyebrow">تعلم معا</span><h2>ملاحظة للأهل</h2></div></div><p>${escapeHTML(item.note || 'شجع الطفل على النظر إلى شكل الحرف ورسمه في الهواء، ثم على الورق.')}</p></article>
     </div>
     <div class="detail-complete-row">${completionButton('coptic', item.id, data)}<div class="detail-prev-next">${previous ? `<a class="button button-soft" href="${ctx.href('/letter', { id: previous.id })}">السابق <span aria-hidden="true">←</span></a>` : ''}${next ? `<a class="button button-soft" href="${ctx.href('/letter', { id: next.id })}">الحرف التالي <span aria-hidden="true">→</span></a>` : ''}</div></div>
     <section class="print-sheet" aria-label="ورقة عمل حرف ${escapeHTML(item.transliteration || '')}"><div class="worksheet-top"><div class="worksheet-brand">لحن <span>ورقة تعلم مرحة</span></div><div class="worksheet-stamp">Ⲁⲃⲅ</div></div><div class="worksheet-title"><span>حرف اليوم</span><h1>${escapeHTML(item.name || item.transliteration || '')}</h1></div><div class="worksheet-main-letter" lang="cop">${escapeHTML(item.glyph)}</div><div class="worksheet-label">أنظر، أقول، ثم أكتب</div><div class="worksheet-trace" lang="cop">${escapeHTML(item.glyph)}　${escapeHTML(item.glyph)}　${escapeHTML(item.glyph)}　${escapeHTML(item.glyph)}</div><div class="worksheet-example"><span>كلمة نتدرب عليها</span><strong lang="cop">${escapeHTML(item.word || '________________')}</strong><span>${escapeHTML(item.translation || '')}</span></div><div class="worksheet-writing-lines"><span></span><span></span><span></span></div><div class="worksheet-footer"><span>اسمي: __________________</span><span>🌟 أحسنت يا بطل!</span></div></section>
@@ -336,9 +325,9 @@ function renderLetterDetail(ctx, data, id) {
 function renderLiturgy(ctx, data) {
   const items = sortByOrder(data.liturgy || []);
   return `<div class="content-page page-enter">${pageIntro(`محطة الحكايات · ${ctx.classConfig.name}`, 'الطقس', 'حكايات صغيرة تساعدنا أن نفهم الصلاة والكنيسة.', '⛪')}
-    <div class="liturgy-welcome"><span class="liturgy-welcome-icon" aria-hidden="true">🕊️</span><div><strong>نتعلم بهدوء ومحبة</strong><p>هذه الدروس مبسطة للأسرة، ويمكن للأهل تعديلها لتناسب تعليم كنيستهم.</p></div></div>
-    ${items.length ? `<div class="item-grid liturgy-grid">${items.map((item, index) => `<a class="learning-card ritual-card" href="${ctx.href('/ritual', { id: item.id })}" style="--card-index:${index}">${mediaArt(item, 'card-art ritual-art')}<span class="card-topline"><span class="card-tag">${item.demo ? 'قصة تجريبية' : 'درس قصير'}</span><span class="card-arrow" aria-hidden="true">←</span></span><h2>${escapeHTML(item.title)}</h2><p>${escapeHTML(item.description || '')}</p><span class="card-action">اكتشف القصة <span aria-hidden="true">↙</span></span></a>`).join('')}</div>` : emptyState('⛪', 'حكايات جديدة قريبا', 'سيضيف الأهل دروس الطقس من لوحة الإدارة.', ctx.href('/admin'), 'إضافة درس')}
-    <div class="soft-callout callout-parent"><span aria-hidden="true">👨‍👩‍👧</span><p>المحتوى يساعد على الحوار، وليس بديلا عن إرشاد معلم الكنيسة.</p></div>
+    <div class="liturgy-welcome"><span class="liturgy-welcome-icon" aria-hidden="true">🕊️</span><div><strong>نتعلم بهدوء ومحبة</strong><p>هذه الدروس مبسطة من كتب المنهج، ومصادرها موجودة في صفحة كل درس.</p></div></div>
+    ${items.length ? `<div class="item-grid liturgy-grid">${items.map((item, index) => `<a class="learning-card ritual-card" href="${ctx.href('/ritual', { id: item.id })}" style="--card-index:${index}">${mediaArt(item, 'card-art ritual-art')}<span class="card-topline"><span class="card-tag">درس قصير</span><span class="card-arrow" aria-hidden="true">←</span></span><h2>${escapeHTML(item.title)}</h2><p>${escapeHTML(item.description || '')}</p><span class="card-action">اكتشف القصة <span aria-hidden="true">↙</span></span></a>`).join('')}</div>` : emptyState('⛪', 'حكايات جديدة قريبا', 'لا توجد دروس في هذا الفصل حاليا.', ctx.href('/home'), 'الرئيسية')}
+    <div class="soft-callout callout-parent"><span aria-hidden="true">👨‍👩‍👧</span><p>المحتوى يساعد على الحوار، وليس بديلا عن إرشاد خادم الكنيسة.</p></div>
   </div>`;
 }
 
@@ -349,9 +338,9 @@ function renderCurriculum(ctx, data) {
       <p class="curriculum-goal">${escapeHTML(track.goal || '')}</p>
       <ul class="curriculum-points">${(track.points || []).map((point) => `<li>${escapeHTML(point)}</li>`).join('')}</ul>
       ${track.reference ? `<small class="tiny-disclaimer">المرجع: ${escapeHTML(track.reference)}</small>` : ''}
-      ${(track.links || []).length ? `<div class="curriculum-links">${track.links.map((link) => `<a class="button button-soft" href="${escapeHTML(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(link.label)} <span aria-hidden="true">↗</span></a>`).join('')}</div>` : ''}
+      ${sourceList(track.links, 'source-list curriculum-sources')}
     </article>`).join('');
-  return `<div class="content-page page-enter">${pageIntro(`منهج الفصل · ${ctx.classConfig.name}`, 'المنهج', 'الألحان والطقس والحروف القبطية لهذا الفصل، مع المدة والمرجع من كتب المدرسة.', '📘')}
+  return `<div class="content-page page-enter">${pageIntro(`منهج الفصل · ${ctx.classConfig.name}`, 'المنهج', 'الألحان والطقس والحروف القبطية لهذا الفصل، مع المدة والمرجع وروابط المصادر.', '📘')}
     ${tracks.length ? `<div class="curriculum-grid">${cards}</div>` : emptyState('📘', 'لا يوجد منهج بعد', 'سيضاف المنهج هنا قريبا.', ctx.href('/home'), 'الرئيسية')}
   </div>`;
 }
@@ -359,12 +348,16 @@ function renderCurriculum(ctx, data) {
 function renderRitualDetail(ctx, data, id) {
   const item = (data.liturgy || []).find((lesson) => lesson.id === id);
   if (!item) return `<div class="content-page page-enter">${emptyState('⛪', 'لم نجد هذا الدرس', 'ربما تغير الرابط أو حذف الدرس.', ctx.href('/liturgy'), 'العودة إلى الطقس')}</div>`;
-  const source = safeYouTubeUrl(item.youtubeUrl);
   return `<div class="content-page detail-page page-enter">
     <div class="back-row"><a class="back-button" href="${ctx.href('/liturgy')}"><span aria-hidden="true">→</span> رجوع إلى الطقس</a><a class="quiet-home" href="${ctx.href('/home')}">الرئيسية</a></div>
-    <section class="ritual-detail-hero"><div class="ritual-detail-icon" aria-hidden="true">${escapeHTML(item.icon || '⛪')}</div><div><span class="eyebrow">حكاية من الطقس · ${item.demo ? 'مثال قابل للتعديل' : 'لنتعلم معا'}</span><h1>${escapeHTML(item.title)}</h1><p>${escapeHTML(item.description || '')}</p></div></section>
-    <div class="ritual-detail-layout"><div class="ritual-main-column"><article class="content-tile lesson-text-tile"><div class="tile-heading"><span class="tile-icon notes-icon">📚</span><div><span class="eyebrow">نقرأ ونحكي</span><h2>${escapeHTML(item.title)}</h2></div></div><div class="lesson-body">${textParagraphs(item.body || 'سيضيف الأهل محتوى هذا الدرس قريبا.')}</div></article>${item.imageAsset ? `<figure class="lesson-image media-art" aria-label="صورة توضيحية"><span class="art-emoji" aria-hidden="true">${escapeHTML(item.icon || '⛪')}</span><img class="art-image" data-asset-id="${escapeHTML(item.imageAsset)}" alt="${escapeHTML(item.title)}" hidden /></figure>` : ''}</div>
-      <aside class="ritual-aside"><article class="content-tile lesson-audio-tile"><div class="tile-heading"><span class="tile-icon tone-icon">🎧</span><div><span class="eyebrow">استمعوا معا</span><h2>تسجيل الدرس</h2></div></div>${audioPlayer({ label: 'استمع إلى الدرس', assetId: item.audioAsset, src: item.audioSrc, caption: item.demo ? 'صوت تجريبي قصير' : 'تسجيل الدرس' })}<small class="tiny-disclaimer">${item.demo && item.audioSrc ? 'نغمة اختبار فقط وليست شرحا صوتيا.' : ''}</small></article><article class="content-tile lesson-notes-tile"><div class="tile-heading"><span class="tile-icon example-icon">💡</span><div><span class="eyebrow">تذكروا</span><h2>ملاحظات</h2></div></div><p>${escapeHTML(item.notes || 'لا توجد ملاحظات بعد.')}</p></article>${source ? `<article class="content-tile lesson-source-tile"><div class="tile-heading"><span class="tile-icon source-icon">▶️</span><div><span class="eyebrow">شاهدوا معا</span><h2>مصدر إضافي</h2></div></div>${youtubeAnchor(item.youtubeUrl, 'شاهدوا على يوتيوب', 'button button-youtube button-wide')}<small class="tiny-disclaimer">روابط الأمثلة تفتح نتائج بحث تجريبية.</small></article>` : ''}</aside></div>
+    <section class="ritual-detail-hero"><div class="ritual-detail-icon" aria-hidden="true">${escapeHTML(item.icon || '⛪')}</div><div><span class="eyebrow">حكاية من الطقس · لنتعلم معا</span><h1>${escapeHTML(item.title)}</h1><p>${escapeHTML(item.description || '')}</p></div></section>
+    <div class="ritual-detail-layout">
+      <div class="ritual-main-column"><article class="content-tile lesson-text-tile"><div class="tile-heading"><span class="tile-icon notes-icon">📚</span><div><span class="eyebrow">نقرأ ونحكي</span><h2>${escapeHTML(item.title)}</h2></div></div><div class="lesson-body">${textParagraphs(item.body || '')}</div></article></div>
+      <aside class="ritual-aside">
+        <article class="content-tile lesson-notes-tile"><div class="tile-heading"><span class="tile-icon example-icon">💡</span><div><span class="eyebrow">تذكروا</span><h2>ملاحظات</h2></div></div><p>${escapeHTML(item.notes || 'لا توجد ملاحظات بعد.')}</p></article>
+        <article class="content-tile sources-tile"><div class="tile-heading"><span class="tile-icon source-icon">🔗</span><div><span class="eyebrow">من أين جاء الدرس؟</span><h2>مصادر الدرس</h2></div></div>${sourceList(item.sources) || '<p>لا توجد مصادر مسجلة.</p>'}</article>
+      </aside>
+    </div>
     <div class="detail-complete-row">${completionButton('liturgy', item.id, data)}<a class="button button-soft" href="${ctx.href('/liturgy')}">اختر حكاية أخرى <span aria-hidden="true">←</span></a></div>
   </div>`;
 }
@@ -399,7 +392,7 @@ function bindPageInteractions(ctx, data) {
       if (!data.progress.completed.includes(key)) {
         data.progress.completed.push(key);
         try {
-          saveData(ctx.classId, data);
+          saveProgress(ctx.classId, data.progress);
           toast('رائع! أضفنا نجمة إلى رحلتك ⭐');
           renderApp();
         } catch (error) {
@@ -412,141 +405,72 @@ function bindPageInteractions(ctx, data) {
   });
   root.querySelectorAll('[data-print-work]').forEach((button) => button.addEventListener('click', () => window.print()));
   bindAudioPlayers(root);
-  hydrateMedia(root).then(() => bindAudioPlayers(root)).catch((error) => console.warn('Media loading issue:', error));
-}
-
-function currentAdminContext(session, route) {
-  const requested = route.classId || (session?.role === 'general' ? adminClass : session?.classId);
-  const target = isValidClass(requested) ? requested : 'kg1';
-  adminClass = target;
-  return target;
 }
 
 function renderApp() {
   if (!root) return;
-  const session = getSession();
-  let route = resolveRoute();
+  const route = resolveRoute();
 
   // Old links without a class: continue in the last opened class, otherwise pick.
   if (route.kind === 'legacy') {
-    pendingLegacyPage = route.page;
+    pendingLegacyPage = route.page === 'admin' ? 'home' : route.page;
     pendingLegacyQuery = route.params.toString();
     const lastClass = getLastClass();
-    replaceHash(lastClass ? `#/${lastClass}/${route.page}${pendingLegacyQuery ? `?${pendingLegacyQuery}` : ''}` : '#/');
+    replaceHash(lastClass ? `#/${lastClass}/${pendingLegacyPage}${pendingLegacyQuery ? `?${pendingLegacyQuery}` : ''}` : '#/');
     return;
   }
 
-  // A class admin may only open their own class panel.
-  if (route.kind === 'page' && route.page === 'admin' && session && session.role !== 'general' && session.classId !== route.classId) {
-    toast(`لوحة ${getClassConfig(route.classId)?.name || ''} ليست متاحة لحسابك. فتحنا لوحة فصل ${getClassConfig(session.classId).name}.`, 'error');
-    replaceHash(`#/${session.classId}/admin`);
-    return;
-  }
-  if (route.kind === 'admin' && session && session.role !== 'general') {
-    replaceHash(`#/${session.classId}/admin`);
+  // The admin panel was removed: send old admin links to the class home page.
+  if (route.kind === 'retired-admin') {
+    const target = route.classId || getLastClass();
+    replaceHash(target ? `#/${target}/home` : '#/');
     return;
   }
 
-  const classId = route.kind === 'page' || route.kind === 'admin' ? route.classId : '';
+  const classId = route.kind === 'page' ? route.classId : '';
   applyTheme(classId);
   if (classId) setLastClass(classId);
 
   const classConfig = classId ? getClassConfig(classId) : null;
   const data = classId ? loadData(classId) : null;
-  const siteData = loadSiteData();
   const ctx = {
     classId,
     classConfig,
-    session,
-    isGeneral: session?.role === 'general',
     data,
-    siteData,
     href: (path, params) => classHref(classId, path, params),
   };
 
   const active = sectionForPage(route.page);
   let page = '';
   let title = 'رحلتنا';
-  let adminHost = null;
 
   if (route.kind === 'picker') {
-    // keep the pending legacy target until the visitor picks a class
     page = renderPicker();
     title = 'اختيار الفصل';
   } else if (route.kind === 'contact') {
-    page = renderContact(ctx, siteData);
+    page = renderContact();
     title = 'تواصل معي';
   } else if (route.kind === 'notfound') {
     page = renderNotFound();
     title = 'صفحة غير موجودة';
-  } else if (route.kind === 'page' || route.kind === 'admin') {
-    if (route.page === 'admin') {
-      const targetClass = currentAdminContext(session, route);
-      const targetConfig = getClassConfig(targetClass);
-      const targetData = loadData(targetClass);
-      page = renderAdminPage({
-        data: targetData,
-        session,
-        targetClass,
-        activeTab: adminTab,
-        siteData,
-      });
-      adminHost = { targetClass };
-    } else {
-      page = renderClassPage(ctx, route);
-    }
-    const label = classConfig ? `${classConfig.name} · ` : '';
-    title = route.page === 'admin'
-      ? `${label}${PAGE_TITLES.admin}`
-      : `${label}${PAGE_TITLES[route.page] || 'رحلتنا'}`;
+  } else if (route.kind === 'page') {
+    page = renderClassPage(ctx, route);
+    title = `${classConfig ? `${classConfig.name} · ` : ''}${PAGE_TITLES[route.page] || 'رحلتنا'}`;
   }
 
-  const headerActive = route.kind === 'page' || route.kind === 'admin' ? active : '';
-  const visitorBar = classId && ctx.isGeneral && route.page !== 'admin'
-    ? renderVisitorClassBar({ classId, page: route.page })
-    : '';
-  root.innerHTML = `${renderHeader({ active: headerActive, classId, session })}<main id="main-content" class="main-content" tabindex="-1">${visitorBar}${page}</main>${renderFooter({ classId })}`;
+  const headerActive = route.kind === 'page' ? active : '';
+  const visitorBar = classId ? renderVisitorClassBar({ classId, page: route.page }) : '';
+  root.innerHTML = `${renderHeader({ active: headerActive, classId })}<main id="main-content" class="main-content" tabindex="-1">${visitorBar}${page}</main>${renderFooter({ classId })}`;
 
-  if (adminHost) {
-    bindAdmin(root, {
-      session,
-      targetClass: adminHost.targetClass,
-      siteData,
-      getTab: () => adminTab,
-      setTab: (tab) => { adminTab = tab; renderApp(); },
-      setClass: (nextClass) => {
-        if (!isValidClass(nextClass)) return;
-        adminClass = nextClass;
-        setLastClass(nextClass);
-        adminTab = 'overview';
-        renderApp();
-      },
-      signIn,
-      landingRoute,
-      sessionTitle,
-      onSignOut: signOut,
-      toast,
-      navigate: (path) => { window.location.hash = path; },
-      rerender: renderApp,
-    });
-  } else {
-    bindPageInteractions(ctx, data);
-  }
+  bindPageInteractions(ctx, data);
 
   document.title = `${title} | لحن`;
   window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
 }
 
 window.addEventListener('hashchange', renderApp);
-window.addEventListener('storage', (event) => {
-  if (!event.key) return;
-  if (event.key.startsWith(APP_CONFIG.classStoragePrefix) || event.key === APP_CONFIG.siteStorageKey) renderApp();
-});
-window.addEventListener('lahn:class-data-updated', (event) => {
-  if (event.detail?.classId === adminClass) renderApp();
-});
 
-migrateLegacyData();
+cleanupLegacyStorage();
 renderApp();
 
 export { renderApp };
