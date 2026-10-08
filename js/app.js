@@ -8,7 +8,7 @@ import {
 } from './storage.js';
 import { getSession, signIn, signOut, landingRoute, sessionTitle } from './auth.js';
 import {
-  escapeHTML, classHref, sectionForPage, getRankLabel, safeYouTubeUrl, sortByOrder, sortStudents, textParagraphs,
+  escapeHTML, classHref, sectionForPage, safeYouTubeUrl, sortByOrder, textParagraphs,
   youtubeAnchor, telHref, whatsappHref, mailtoHref, facebookHref,
 } from './utils.js';
 
@@ -218,7 +218,6 @@ function renderContact(ctx, siteData) {
 
 function renderHome(ctx, data) {
   const { classConfig } = ctx;
-  const students = sortStudents(data.students || []).slice(0, 5);
   const completedCount = data.progress?.completed?.length || 0;
   return `
     <div class="home-page page-enter">
@@ -266,11 +265,6 @@ function renderHome(ctx, data) {
       </section>
 
       <section class="home-lower-grid">
-        <div class="scoreboard-card">
-          <div class="scoreboard-heading"><div class="trophy-icon" aria-hidden="true">🏆</div><div><span class="eyebrow">كل محاولة تستحق التصفيق</span><h2>ترتيب الأبطال</h2></div><span class="scoreboard-confetti" aria-hidden="true">✦</span></div>
-          ${students.length ? `<ol class="score-list">${students.map((student, index) => `<li class="score-row ${index < 3 ? `score-rank-${index + 1}` : ''}"><span class="score-rank">${getRankLabel(index)}</span><span class="score-avatar" aria-hidden="true">${escapeHTML(student.avatar || '🌟')}</span><span class="score-name">${escapeHTML(student.name)}</span><span class="score-points"><strong>${Number(student.score) || 0}</strong><small>نقطة</small></span></li>`).join('')}</ol>` : `<div class="score-empty"><span>🌱</span><p>ستظهر أسماء الأبطال هنا قريبا.</p></div>`}
-          <div class="scoreboard-footer"><span>👏 كل طفل بطل بطريقته!</span><span class="read-only-note">النتائج يحدثها الأهل</span></div>
-        </div>
         <aside class="parent-note-card"><div class="parent-note-top"><span class="parent-note-icon" aria-hidden="true">🧡</span><span class="mini-label">${escapeHTML(classConfig.arabicName)}</span></div><h2>لحظة تعلم…<br /><span>تصير ذكرى حلوة.</span></h2><p>${escapeHTML(data.settings?.parentNote || 'اختاروا محطة، واستمتعوا بها معا.')}</p><a href="${ctx.href('/admin')}" class="text-link">تسجيل دخول ${escapeHTML(classConfig.name)} <span aria-hidden="true">←</span></a><div class="parent-note-doodle" aria-hidden="true">✿</div></aside>
       </section>
 

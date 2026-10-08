@@ -1,7 +1,7 @@
 import { APP_CONFIG, getClassConfig, isValidClass } from './config.js';
 
 // Roles: 'general' manages every class plus the contact page,
-// 'class' manages one class only (resources, hymns, letters, lessons, students).
+// 'class' manages one class only (hymns, letters, lessons).
 const GENERAL_ROLE = 'general';
 const CLASS_ROLE = 'class';
 

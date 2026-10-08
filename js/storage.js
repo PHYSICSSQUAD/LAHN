@@ -25,7 +25,8 @@ function normalizeClassData(classId, saved) {
     ...saved,
     version: 2,
     classId,
-    students: Array.isArray(saved.students) ? saved.students : base.students,
+    // Student names and points were removed from the product: never keep them.
+    students: [],
     hymns: Array.isArray(saved.hymns) ? saved.hymns : base.hymns,
     copticLetters: Array.isArray(saved.copticLetters) ? saved.copticLetters : base.copticLetters,
     liturgy: Array.isArray(saved.liturgy) ? saved.liturgy : base.liturgy,
@@ -96,7 +97,6 @@ export function loadClassSummary() {
       classId,
       config,
       counts: {
-        students: data.students.length,
         hymns: data.hymns.length,
         copticLetters: data.copticLetters.length,
         liturgy: data.liturgy.length,

@@ -54,12 +54,7 @@ function buildLetters(classId) {
 
 const seeds = {
   babyclass: {
-    students: [
-      { id: 'babyclass-student-tadros', name: 'تادرس', score: 420, avatar: '🐻' },
-      { id: 'babyclass-student-marina', name: 'مارينا', score: 380, avatar: '🐰' },
-      { id: 'babyclass-student-elia', name: 'إيليا', score: 300, avatar: '🐥' },
-      { id: 'babyclass-student-yostina', name: 'يوستينا', score: 240, avatar: '🦋' },
-    ],
+    students: [],
     hymns: [
       {
         id: 'babyclass-kyrie', title: 'كيرياليسون الصغير', description: 'نغمة قصيرة جدا نرددها مع الدبدوب.', icon: '🍼', order: 1,
@@ -104,13 +99,7 @@ const seeds = {
   },
 
   kg1: {
-    students: [
-      { id: 'kg1-student-ahmed', name: 'أحمد', score: 950, avatar: '🦁' },
-      { id: 'kg1-student-mariam', name: 'مريم', score: 870, avatar: '🦋' },
-      { id: 'kg1-student-youssef', name: 'يوسف', score: 820, avatar: '🐻' },
-      { id: 'kg1-student-salma', name: 'سلمى', score: 760, avatar: '🐰' },
-      { id: 'kg1-student-nour', name: 'نور', score: 640, avatar: '🐼' },
-    ],
+    students: [],
     hymns: [
       {
         id: 'kg1-kyrie-eleison', title: 'لحن كيرياليسون', description: 'ترنيمة قصيرة نطلب فيها الرحمة بفرح.', icon: '🎵', order: 1,
@@ -170,13 +159,7 @@ const seeds = {
   },
 
   kg2: {
-    students: [
-      { id: 'kg2-student-kyrillos', name: 'كيرلس', score: 1180, avatar: '🦅' },
-      { id: 'kg2-student-mark', name: 'مارك', score: 1040, avatar: '🐺' },
-      { id: 'kg2-student-philopateer', name: 'فيلوباتير', score: 910, avatar: '🐬' },
-      { id: 'kg2-student-damiana', name: 'دميانة', score: 880, avatar: '🌸' },
-      { id: 'kg2-student-shenouda', name: 'شنودة', score: 730, avatar: '🐨' },
-    ],
+    students: [],
     hymns: [
       {
         id: 'kg2-kirialison', title: 'كيرياليسون الكبير', description: 'نرددها جماعة بصوت واحد في الكنيسة.', icon: '🎶', order: 1,

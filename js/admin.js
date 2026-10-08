@@ -4,16 +4,9 @@ import {
   createId, deleteMedia, loadClassSummary, loadData, resetData, resetSiteData, saveData, saveMedia, saveSiteData,
 } from './storage.js';
 import { renderClassSwitcher } from './components.js';
-import { escapeHTML, safeYouTubeUrl, sortByOrder, sortStudents, facebookHref, mailtoHref } from './utils.js';
+import { escapeHTML, safeYouTubeUrl, sortByOrder, facebookHref, mailtoHref } from './utils.js';
 
 const sectionConfig = {
-  students: {
-    title: 'الأبطال والنقاط', singular: 'طالب', icon: '🏆', collection: 'students',
-    fields: [
-      { key: 'name', label: 'اسم الطالب', type: 'text', required: true, placeholder: 'مثال: مريم' },
-      { key: 'avatar', label: 'رمز الشخصية (إيموجي)', type: 'text', required: false, placeholder: '🦋', defaultValue: '🌟' },
-    ],
-  },
   hymns: {
     title: 'الألحان', singular: 'لحن', icon: '🎵', collection: 'hymns',
     fields: [
@@ -63,7 +56,6 @@ const sectionConfig = {
 
 const CLASS_SECTIONS = [
   ['overview', 'نظرة عامة', '⌂'],
-  ['students', 'الأبطال والنقاط', '🏆'],
   ['hymns', 'الألحان', '🎵'],
   ['copticLetters', 'الحروف القبطية', 'Ⲁ'],
   ['liturgy', 'دروس الطقس', '⛪'],
@@ -93,9 +85,9 @@ function renderLogin({ session, targetClass = '', classScoped = false } = {}) {
     ? `أهلا بكم في<br /><span>لوحة فصل ${escapeHTML(classConfig.name)}</span> ${escapeHTML(classConfig.emoji)}`
     : 'أهلا بكم في<br /><span>لوحة المدير العام</span> 🔐';
   const intro = classConfig
-    ? `من هنا يدير خادم ${escapeHTML(classConfig.name)} ألحان الفصل وحروفه ودروسه وأبطاله.`
+    ? `من هنا يدير خادم ${escapeHTML(classConfig.name)} ألحان الفصل وحروفه ودروسه.`
     : 'من هنا يدير المدير العام كل الفصول، ويعدل صفحة التواصل. مديرو الفصول يدخلون من لوحة فصلهم.';
-  return `<div class="admin-gate page-enter"><div class="admin-gate-copy"><span class="eyebrow">دخول خاص بالمديرين</span><h1>${heading}</h1><p>${intro}</p><div class="gate-note"><span aria-hidden="true">🧡</span><div><strong>كل فصل له لوحته وبياناته</strong><small>${classConfig ? `حساب ${escapeHTML(classConfig.name)} يعدل هذا الفصل فقط.` : 'المدير العام يعدل كل الفصول وصفحة التواصل.'}</small></div></div><a class="back-home-link" href="#/">← كل الفصول</a></div><div class="admin-login-card"><div class="login-lock" aria-hidden="true">🔑</div><span class="eyebrow">تسجيل الدخول</span><h2>مرحبا بعودتكم</h2><p>اكتبوا اسم المستخدم وكلمة المرور.</p><form data-admin-login novalidate data-login-scope="${classScoped ? 'class' : 'general'}" data-login-class="${escapeHTML(targetClass)}"><label class="form-label" for="admin-username">اسم المستخدم</label><input id="admin-username" name="username" type="text" autocomplete="username" required placeholder="اسم المستخدم" /><label class="form-label" for="admin-password">كلمة المرور</label><input id="admin-password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" /><p class="login-error" data-login-error role="alert" hidden></p><button class="button button-primary button-wide login-submit" type="submit">دخول لوحة الإدارة <span aria-hidden="true">←</span></button></form><div class="login-hint"><span aria-hidden="true">🗂️</span> حسابات التجربة: <b>admin</b> (مدير عام) و<b>babyclass</b> و<b>kg1</b> و<b>kg2</b> (مديرو الفصول).</div><div class="login-security-note"><span aria-hidden="true">🛡️</span> نسخة العرض لا تستخدم تسجيل دخول آمنا للخوادم. لا تنشروا كلمات مرور حقيقية هنا.</div></div></div>`;
+  return `<div class="admin-gate page-enter"><div class="admin-gate-copy"><span class="eyebrow">دخول خاص بالمديرين</span><h1>${heading}</h1><p>${intro}</p><div class="gate-note"><span aria-hidden="true">🧡</span><div><strong>كل فصل له لوحته وبياناته</strong><small>${classConfig ? `حساب ${escapeHTML(classConfig.name)} يعدل هذا الفصل فقط.` : 'المدير العام يعدل كل الفصول وصفحة التواصل.'}</small></div></div><a class="back-home-link" href="#/">← كل الفصول</a></div><div class="admin-login-card"><div class="login-lock" aria-hidden="true">🔑</div><span class="eyebrow">تسجيل الدخول</span><h2>مرحبا بعودتكم</h2><p>اكتبوا اسم المستخدم وكلمة المرور.</p><form data-admin-login novalidate data-login-scope="${classScoped ? 'class' : 'general'}" data-login-class="${escapeHTML(targetClass)}"><label class="form-label" for="admin-username">اسم المستخدم</label><input id="admin-username" name="username" type="text" autocomplete="username" required placeholder="اسم المستخدم" /><label class="form-label" for="admin-password">كلمة المرور</label><input id="admin-password" name="password" type="password" autocomplete="current-password" required placeholder="••••••••" /><p class="login-error" data-login-error role="alert" hidden></p><button class="button button-primary button-wide login-submit" type="submit">دخول لوحة الإدارة <span aria-hidden="true">←</span></button></form><div class="login-hint"><span aria-hidden="true">🗂️</span> حسابات الفصول: <b>babyclassadmin</b> و<b>kg1admin</b> و<b>kg2admin</b>.</div><div class="login-security-note"><span aria-hidden="true">🛡️</span> نسخة العرض لا تستخدم تسجيل دخول آمنا للخوادم. لا تنشروا كلمات مرور حقيقية هنا.</div></div></div>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,30 +97,27 @@ function renderLogin({ session, targetClass = '', classScoped = false } = {}) {
 function renderOverview(data, { session, targetClass }) {
   const classConfig = getClassConfig(targetClass);
   const counts = [
-    ['students', 'الأبطال', '🏆', data.students.length],
     ['hymns', 'الألحان', '🎵', data.hymns.length],
     ['copticLetters', 'الحروف', 'Ⲁ', data.copticLetters.length],
     ['liturgy', 'دروس الطقس', '⛪', data.liturgy.length],
   ];
   const summary = isGeneralSession(session)
-    ? `<div class="admin-classes-grid">${loadClassSummary().map((entry) => `<button class="admin-class-card ${entry.classId === targetClass ? 'is-active' : ''}" type="button" data-admin-class="${entry.classId}"><span class="admin-class-emoji" aria-hidden="true">${escapeHTML(entry.config.emoji)}</span><span class="admin-class-name">${escapeHTML(entry.config.name)}</span><small>${entry.counts.students} طالب · ${entry.counts.hymns} لحن · ${entry.counts.copticLetters} حرف · ${entry.counts.liturgy} درس</small><span class="admin-class-link">${entry.saved ? 'بيانات محفوظة' : 'بيانات البداية'} <span aria-hidden="true">←</span></span></button>`).join('')}</div>`
+    ? `<div class="admin-classes-grid">${loadClassSummary().map((entry) => `<button class="admin-class-card ${entry.classId === targetClass ? 'is-active' : ''}" type="button" data-admin-class="${entry.classId}"><span class="admin-class-emoji" aria-hidden="true">${escapeHTML(entry.config.emoji)}</span><span class="admin-class-name">${escapeHTML(entry.config.name)}</span><small>${entry.counts.hymns} لحن · ${entry.counts.copticLetters} حرف · ${entry.counts.liturgy} درس</small><span class="admin-class-link">${entry.saved ? 'بيانات محفوظة' : 'بيانات البداية'} <span aria-hidden="true">←</span></span></button>`).join('')}</div>`
     : '';
   return `<div class="admin-overview"><div class="admin-welcome"><div><span class="eyebrow">${escapeHTML(classConfig.name)} · ${escapeHTML(classConfig.arabicName)}</span><h2>أهلا بكم 👋</h2><p>كل شيء جاهز لتصنعوا رحلة تعلم أجمل${isGeneralSession(session) ? ' — اختاروا الفصل الذي تريدون تعديله من الشريط أعلى الصفحة.' : ` لفصل ${escapeHTML(classConfig.name)}.`}</p></div><span class="admin-welcome-art" aria-hidden="true">${escapeHTML(classConfig.emoji)}</span></div>${summary}<div class="admin-stats-grid">${counts.map(([tab, label, icon, count]) => `<button class="admin-stat-card stat-${tab}" type="button" data-admin-tab="${tab}"><span class="stat-icon" aria-hidden="true">${icon}</span><span class="stat-number">${count}</span><span class="stat-label">${label}</span><span class="stat-arrow" aria-hidden="true">←</span></button>`).join('')}</div><div class="admin-overview-lower"><div class="admin-hint-card"><span class="admin-hint-icon" aria-hidden="true">✨</span><div><h3>ابدأوا بخطوة صغيرة</h3><p>حدثوا تسجيلا أو أضيفوا درسا واحدا. كل ما تحفظونه يبقى على هذا المتصفح بعد إعادة التحميل، ولكل فصل بياناته منفصلة عن باقي الفصول.</p></div></div><div class="admin-safety-card"><span aria-hidden="true">🔒</span><div><strong>ملاحظة مهمة عن الأمان</strong><p>وضع العرض محلي لهذا الجهاز فقط، وليس مناسبا لحفظ بيانات أطفال حقيقية.</p></div></div></div></div>`;
 }
 
 function getItems(data, type) {
   const list = data[sectionConfig[type].collection] || [];
-  return type === 'students' ? sortStudents(list) : sortByOrder(list);
+  return sortByOrder(list);
 }
 
 function getItemMain(type, item) {
-  if (type === 'students') return item.name || 'طالب جديد';
   if (type === 'copticLetters') return `${item.glyph || ''} ${item.transliteration || item.name || 'حرف جديد'}`;
   return item.title || 'عنصر جديد';
 }
 
 function getItemSubline(type, item, index) {
-  if (type === 'students') return `الترتيب ${index + 1} · ${Number(item.score) || 0} نقطة`;
   if (type === 'hymns') return item.description || 'لا يوجد وصف بعد';
   if (type === 'copticLetters') return [item.name, item.word ? `مثال: ${item.word}` : 'لا يوجد مثال بعد'].filter(Boolean).join(' · ');
   return item.description || 'لا يوجد وصف بعد';
@@ -138,7 +127,7 @@ function renderList(data, type, classId) {
   const config = sectionConfig[type];
   const items = getItems(data, type);
   const classConfig = getClassConfig(classId);
-  return `<section class="admin-list-section"><div class="admin-section-title"><div><span class="eyebrow">إدارة محتوى ${escapeHTML(classConfig.name)}</span><h2>${config.icon} ${config.title}</h2><p>${type === 'students' ? 'الترتيب تلقائي. عدلوا النقاط بخطوات ثابتة: 20 أو 50 أو 100.' : 'أضيفوا المحتوى وعدلوا ترتيبه بسهولة.'}</p></div><button class="button button-primary admin-add-button" type="button" data-add="${type}"><span aria-hidden="true">＋</span> إضافة ${config.singular}</button></div>${items.length > 4 ? `<label class="admin-search"><span aria-hidden="true">⌕</span><input type="search" data-admin-search placeholder="ابحث في ${config.title}…" aria-label="ابحث في ${config.title}" /></label>` : ''}<div class="admin-items-grid" data-admin-items>${items.length ? items.map((item, index) => `<article class="admin-item-card" data-searchable="${escapeHTML(`${getItemMain(type, item)} ${getItemSubline(type, item, index)}`).toLowerCase()}"><div class="admin-item-icon" aria-hidden="true">${escapeHTML(item.avatar || item.icon || item.glyph || config.icon)}</div><div class="admin-item-copy"><strong>${escapeHTML(getItemMain(type, item))}</strong><small>${escapeHTML(getItemSubline(type, item, index))}</small></div><div class="admin-item-actions">${type === 'students' ? `<button class="icon-action score-action" type="button" data-score-edit="${escapeHTML(item.id)}" aria-label="تعديل نقاط ${escapeHTML(item.name)}" title="تعديل النقاط">±</button>` : ''}<button class="icon-action edit-action" type="button" data-edit="${escapeHTML(type)}:${escapeHTML(item.id)}" aria-label="تعديل ${escapeHTML(getItemMain(type, item))}" title="تعديل">✎</button><button class="icon-action delete-action" type="button" data-delete="${escapeHTML(type)}:${escapeHTML(item.id)}" aria-label="حذف ${escapeHTML(getItemMain(type, item))}" title="حذف">×</button></div></article>`).join('') : `<div class="admin-empty-state"><span aria-hidden="true">${config.icon}</span><strong>لا يوجد محتوى بعد</strong><p>ابدأوا بإضافة ${config.singular} جديد لفصل ${escapeHTML(classConfig.name)}.</p><button class="button button-soft" type="button" data-add="${type}">＋ إضافة الآن</button></div>`}</div><p class="admin-search-empty" data-search-empty hidden>لم نعثر على نتائج. جرب كلمة أخرى.</p></section>`;
+  return `<section class="admin-list-section"><div class="admin-section-title"><div><span class="eyebrow">إدارة محتوى ${escapeHTML(classConfig.name)}</span><h2>${config.icon} ${config.title}</h2><p>أضيفوا المحتوى وعدلوا ترتيبه بسهولة.</p></div><button class="button button-primary admin-add-button" type="button" data-add="${type}"><span aria-hidden="true">＋</span> إضافة ${config.singular}</button></div>${items.length > 4 ? `<label class="admin-search"><span aria-hidden="true">⌕</span><input type="search" data-admin-search placeholder="ابحث في ${config.title}…" aria-label="ابحث في ${config.title}" /></label>` : ''}<div class="admin-items-grid" data-admin-items>${items.length ? items.map((item, index) => `<article class="admin-item-card" data-searchable="${escapeHTML(`${getItemMain(type, item)} ${getItemSubline(type, item, index)}`).toLowerCase()}"><div class="admin-item-icon" aria-hidden="true">${escapeHTML(item.avatar || item.icon || item.glyph || config.icon)}</div><div class="admin-item-copy"><strong>${escapeHTML(getItemMain(type, item))}</strong><small>${escapeHTML(getItemSubline(type, item, index))}</small></div><div class="admin-item-actions"><button class="icon-action edit-action" type="button" data-edit="${escapeHTML(type)}:${escapeHTML(item.id)}" aria-label="تعديل ${escapeHTML(getItemMain(type, item))}" title="تعديل">✎</button><button class="icon-action delete-action" type="button" data-delete="${escapeHTML(type)}:${escapeHTML(item.id)}" aria-label="حذف ${escapeHTML(getItemMain(type, item))}" title="حذف">×</button></div></article>`).join('') : `<div class="admin-empty-state"><span aria-hidden="true">${config.icon}</span><strong>لا يوجد محتوى بعد</strong><p>ابدأوا بإضافة ${config.singular} جديد لفصل ${escapeHTML(classConfig.name)}.</p><button class="button button-soft" type="button" data-add="${type}">＋ إضافة الآن</button></div>`}</div><p class="admin-search-empty" data-search-empty hidden>لم نعثر على نتائج. جرب كلمة أخرى.</p></section>`;
 }
 
 function renderSettings(data, classId) {
@@ -211,8 +200,7 @@ function openRecordDialog(root, type, item = null, notify, rerender, classId) {
   dialog.className = 'admin-dialog';
   dialog.setAttribute('aria-labelledby', 'record-dialog-title');
   const classConfig = getClassConfig(classId);
-  const scoreFormHint = type === 'students' ? '<p class="score-form-note">يبدأ الطالب من صفر نقطة. يمكن إضافة النقاط لاحقا بخطوات ثابتة من 20 أو 50 أو 100.</p>' : '';
-  dialog.innerHTML = `<div class="dialog-header"><div><span class="eyebrow">${item ? 'تعديل المحتوى' : 'إضافة محتوى جديد'} · ${escapeHTML(classConfig.name)}</span><h2 id="record-dialog-title">${item ? 'تعديل' : 'إضافة'} ${escapeHTML(config.singular)}</h2></div><button class="dialog-close" type="button" data-dialog-close aria-label="إغلاق">×</button></div><form class="record-form" data-record-form>${scoreFormHint}<div class="record-form-fields">${config.fields.map((field) => renderFormField(field, item, type, classId)).join('')}</div><div class="dialog-actions"><button class="button button-soft" type="button" data-dialog-close>إلغاء</button><button class="button button-primary" type="submit">حفظ ${escapeHTML(config.singular)} <span aria-hidden="true">✓</span></button></div></form>`;
+  dialog.innerHTML = `<div class="dialog-header"><div><span class="eyebrow">${item ? 'تعديل المحتوى' : 'إضافة محتوى جديد'} · ${escapeHTML(classConfig.name)}</span><h2 id="record-dialog-title">${item ? 'تعديل' : 'إضافة'} ${escapeHTML(config.singular)}</h2></div><button class="dialog-close" type="button" data-dialog-close aria-label="إغلاق">×</button></div><form class="record-form" data-record-form><div class="record-form-fields">${config.fields.map((field) => renderFormField(field, item, type, classId)).join('')}</div><div class="dialog-actions"><button class="button button-soft" type="button" data-dialog-close>إلغاء</button><button class="button button-primary" type="submit">حفظ ${escapeHTML(config.singular)} <span aria-hidden="true">✓</span></button></div></form>`;
   root.append(dialog);
   dialog.showModal();
   dialog.querySelectorAll('[data-dialog-close]').forEach((button) => button.addEventListener('click', () => dialog.close()));
@@ -222,8 +210,7 @@ function openRecordDialog(root, type, item = null, notify, rerender, classId) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     const formData = new FormData(form);
-    const fresh = { ...(item || {}), id: item?.id || createId(type === 'students' ? 'student' : type === 'hymns' ? 'hymn' : type === 'copticLetters' ? 'letter' : 'lesson') };
-    if (type === 'students' && !Number.isFinite(Number(fresh.score))) fresh.score = 0;
+    const fresh = { ...(item || {}), id: item?.id || createId(type === 'hymns' ? 'hymn' : type === 'copticLetters' ? 'letter' : 'lesson') };
     for (const field of config.fields.filter((entry) => entry.type !== 'file')) {
       const raw = String(formData.get(field.key) ?? '').trim();
       if (field.required && !raw) {
@@ -272,39 +259,6 @@ function openRecordDialog(root, type, item = null, notify, rerender, classId) {
       notify(error.message || 'تعذر حفظ التغييرات.', 'error');
     }
   });
-}
-
-function openScoreDialog(root, studentId, toast, rerender, classId) {
-  const student = loadData(classId).students.find((record) => record.id === studentId);
-  if (!student) return;
-  root.querySelector('.admin-dialog')?.remove();
-  const dialog = document.createElement('dialog');
-  dialog.className = 'admin-dialog score-dialog';
-  dialog.setAttribute('aria-labelledby', 'score-dialog-title');
-  dialog.innerHTML = `<div class="dialog-header"><div><span class="eyebrow">نقاط الطالب · ${escapeHTML(getClassConfig(classId).name)}</span><h2 id="score-dialog-title">${escapeHTML(student.name)}</h2></div><button class="dialog-close" type="button" data-score-close aria-label="إغلاق">×</button></div><div class="score-dialog-body"><div class="score-current"><span>النقاط الحالية</span><strong>${Number(student.score) || 0}</strong></div><p>اختر خطوة ثابتة لإضافة النقاط أو خصمها:</p><div class="score-adjust-grid"><button class="score-step score-step-plus" type="button" data-score-delta="20">+20</button><button class="score-step score-step-plus" type="button" data-score-delta="50">+50</button><button class="score-step score-step-plus" type="button" data-score-delta="100">+100</button><button class="score-step score-step-minus" type="button" data-score-delta="-20">-20</button><button class="score-step score-step-minus" type="button" data-score-delta="-50">-50</button><button class="score-step score-step-minus" type="button" data-score-delta="-100">-100</button></div><small>لا يمكن أن تصبح النقاط أقل من صفر. يتحدث ترتيب الأبطال تلقائيا بعد كل تعديل.</small></div>`;
-  root.append(dialog);
-  dialog.showModal();
-  dialog.querySelector('[data-score-close]')?.addEventListener('click', () => dialog.close());
-  dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
-  dialog.addEventListener('close', () => dialog.remove(), { once: true });
-  dialog.querySelectorAll('[data-score-delta]').forEach((button) => button.addEventListener('click', () => {
-    const delta = Number(button.dataset.scoreDelta) || 0;
-    const data = loadData(classId);
-    const record = data.students.find((entry) => entry.id === studentId);
-    if (!record) return;
-    const nextScore = (Number(record.score) || 0) + delta;
-    if (nextScore < 0) {
-      toast('لا يمكن خصم نقاط أكثر من الرصيد الحالي.', 'error');
-      return;
-    }
-    record.score = nextScore;
-    try {
-      saveData(classId, data);
-      dialog.close();
-      toast(`تم تحديث النقاط إلى ${nextScore}.`);
-      rerender();
-    } catch (error) { toast(error.message, 'error'); }
-  }));
 }
 
 function downloadJson(value, filename) {
@@ -373,11 +327,6 @@ export function bindAdmin(root, context) {
     const addButton = event.target.closest('[data-add]');
     if (addButton) {
       openRecordDialog(root, addButton.dataset.add, null, ctx.toast, ctx.rerender, ctx.targetClass);
-      return;
-    }
-    const scoreButton = event.target.closest('[data-score-edit]');
-    if (scoreButton) {
-      openScoreDialog(root, scoreButton.dataset.scoreEdit, ctx.toast, ctx.rerender, ctx.targetClass);
       return;
     }
     const editButton = event.target.closest('[data-edit]');
@@ -510,13 +459,13 @@ export function bindAdmin(root, context) {
     if (!file) return;
     try {
       const imported = JSON.parse(await file.text());
-      const valid = ['students', 'hymns', 'copticLetters', 'liturgy'].every((key) => Array.isArray(imported[key]));
+      const valid = ['hymns', 'copticLetters', 'liturgy'].every((key) => Array.isArray(imported[key]));
       if (!valid) throw new Error('ملف النسخة لا يحتوي على أقسام لحن المطلوبة.');
       if (!window.confirm(`سيستبدل هذا الملف كل محتوى فصل ${getClassConfig(ctx.targetClass).name} الحالي. هل نتابع؟`)) return;
       const base = getDefaultData(ctx.targetClass);
       const restored = {
         ...base,
-        students: imported.students,
+        students: [],
         hymns: imported.hymns,
         copticLetters: imported.copticLetters,
         liturgy: imported.liturgy,
