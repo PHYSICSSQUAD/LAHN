@@ -19,9 +19,9 @@ export const APP_CONFIG = Object.freeze({
   }),
   // Demo-only class manager accounts: each one manages its own class only.
   classAdmins: Object.freeze([
-    Object.freeze({ username: 'babyclass', password: '112233', classId: 'babyclass' }),
-    Object.freeze({ username: 'kg1', password: '445566', classId: 'kg1' }),
-    Object.freeze({ username: 'kg2', password: '778899', classId: 'kg2' }),
+    Object.freeze({ username: 'babyclassadmin', password: 'babyclass123', classId: 'babyclass' }),
+    Object.freeze({ username: 'kg1admin', password: 'kg1123', classId: 'kg1' }),
+    Object.freeze({ username: 'kg2admin', password: 'kg2123', classId: 'kg2' }),
   ]),
   limits: Object.freeze({
     imageBytes: 8 * 1024 * 1024,

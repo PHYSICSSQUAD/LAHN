@@ -15,6 +15,7 @@ export function renderHeader({ active = '', classId = '', session = null } = {})
     { id: 'hymns', href: classHref(classId, '/hymns'), icon: '🎵', label: 'الألحان' },
     { id: 'liturgy', href: classHref(classId, '/liturgy'), icon: '⛪', label: 'الطقس' },
     { id: 'coptic', href: classHref(classId, '/coptic'), icon: 'Ⲁⲃⲅ', label: 'القبطي' },
+    { id: 'curriculum', href: classHref(classId, '/curriculum'), icon: '📘', label: 'المنهج' },
   ];
   const brandSub = classConfig ? `${classConfig.name} · ${classConfig.arabicName}` : 'اختار فصلك وابدأ';
   const adminLabel = session ? 'لوحة الإدارة' : 'دخول الإدارة';
@@ -67,7 +68,7 @@ export function renderClassSwitcher({ selectedClass = '', session = null } = {})
 
 // Quick strip for the general admin while browsing a class site.
 export function renderVisitorClassBar({ classId = '', page = 'home' } = {}) {
-  const target = ['home', 'hymns', 'coptic', 'liturgy'].includes(page) ? page : 'home';
+  const target = ['home', 'hymns', 'coptic', 'liturgy', 'curriculum'].includes(page) ? page : 'home';
   return `<div class="visitor-class-bar" role="group" aria-label="تبديل فصول الموقع">
     <span class="visitor-class-label"><span aria-hidden="true">🧭</span> تتصفح الآن</span>
     <div class="visitor-class-list">

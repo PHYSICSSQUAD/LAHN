@@ -150,7 +150,7 @@ img { max-width: 100%; }
 .round-arrow { position: absolute; inset-inline-end: 18px; inset-block-end: 21px; width: 35px; height: 35px; display: grid; place-items: center; border-radius: 12px; color: #52665d; background: rgba(255,255,255,.7); font-size: 18px; transition: transform .2s ease; }
 .destination-card:hover .round-arrow { transform: translateX(-3px); }
 
-.home-lower-grid { display: grid; grid-template-columns: 1.12fr .88fr; gap: 20px; align-items: stretch; }
+.home-lower-grid { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: stretch; }
 .scoreboard-card, .parent-note-card { min-width: 0; padding: 25px; border-radius: 26px; background: white; box-shadow: var(--shadow-soft); }
 .scoreboard-card { border: 1px solid #f2eee2; }
 .scoreboard-heading { position: relative; display: flex; align-items: center; gap: 13px; margin-block-end: 19px; }
@@ -986,3 +986,10 @@ html[data-class] ::selection { background: var(--green-soft); }
   .admin-classes-grid { grid-template-columns: 1fr; }
   .footer-links { gap: 10px; }
 }
+
+/* Curriculum page (المنهج) */
+.curriculum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 18px; margin-block-start: 18px; }
+.curriculum-card { display: flex; flex-direction: column; gap: 10px; }
+.curriculum-goal { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.curriculum-points { margin: 0; padding-inline-start: 20px; line-height: 1.9; font-weight: 700; }
+.curriculum-links { display: flex; flex-wrap: wrap; gap: 8px; margin-block-start: auto; }

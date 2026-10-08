@@ -44,6 +44,7 @@ export function sectionForPage(page = '') {
   if (page === 'hymns' || page === 'hymn') return 'hymns';
   if (page === 'coptic' || page === 'letter') return 'coptic';
   if (page === 'liturgy' || page === 'ritual') return 'liturgy';
+  if (page === 'curriculum') return 'curriculum';
   return '';
 }
 
@@ -93,10 +94,6 @@ export function sortByOrder(items = []) {
   return [...items].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
 }
 
-export function sortStudents(items = []) {
-  return [...items].sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0) || String(a.name).localeCompare(String(b.name), 'ar'));
-}
-
 export function formatTime(seconds = 0) {
   if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
   const total = Math.floor(seconds);
@@ -108,10 +105,6 @@ export function formatTime(seconds = 0) {
 export function textParagraphs(text = '') {
   return String(text).split(/\n\s*\n/).map((paragraph) => paragraph.trim()).filter(Boolean)
     .map((paragraph) => `<p>${escapeHTML(paragraph).replaceAll('\n', '<br>')}</p>`).join('');
-}
-
-export function getRankLabel(index) {
-  return ['🥇', '🥈', '🥉'][index] || `${index + 1}`;
 }
 
 export function humanFileSize(bytes = 0) {
