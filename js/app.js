@@ -13,8 +13,8 @@ import {
 } from './utils.js';
 
 const root = document.querySelector('#app');
-const CLASS_PAGES = ['home', 'hymns', 'hymn', 'coptic', 'letter', 'liturgy', 'ritual', 'admin'];
-const LEGACY_PAGES = new Set(['home', 'hymns', 'hymn', 'coptic', 'letter', 'liturgy', 'ritual', 'admin']);
+const CLASS_PAGES = ['home', 'hymns', 'hymn', 'coptic', 'letter', 'liturgy', 'ritual', 'curriculum', 'admin'];
+const LEGACY_PAGES = new Set(['home', 'hymns', 'hymn', 'coptic', 'letter', 'liturgy', 'ritual', 'curriculum', 'admin']);
 const PAGE_TITLES = {
   home: 'الرئيسية', hymns: 'الألحان', hymn: 'لحن', coptic: 'القبطي', letter: 'حرف قبطي',
   liturgy: 'الطقس', ritual: 'درس من الطقس', admin: 'الإدارة',
@@ -342,6 +342,20 @@ function renderLiturgy(ctx, data) {
   </div>`;
 }
 
+function renderCurriculum(ctx, data) {
+  const tracks = data.curriculum || [];
+  const cards = tracks.map((track, index) => `<article class="content-tile curriculum-card" style="--card-index:${index}">
+      <div class="tile-heading"><span class="tile-icon tone-icon" aria-hidden="true">${escapeHTML(track.icon || '📘')}</span><div><span class="eyebrow">${escapeHTML(track.duration || 'محطة من المنهج')}</span><h2>${escapeHTML(track.title)}</h2></div></div>
+      <p class="curriculum-goal">${escapeHTML(track.goal || '')}</p>
+      <ul class="curriculum-points">${(track.points || []).map((point) => `<li>${escapeHTML(point)}</li>`).join('')}</ul>
+      ${track.reference ? `<small class="tiny-disclaimer">المرجع: ${escapeHTML(track.reference)}</small>` : ''}
+      ${(track.links || []).length ? `<div class="curriculum-links">${track.links.map((link) => `<a class="button button-soft" href="${escapeHTML(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(link.label)} <span aria-hidden="true">↗</span></a>`).join('')}</div>` : ''}
+    </article>`).join('');
+  return `<div class="content-page page-enter">${pageIntro(`منهج الفصل · ${ctx.classConfig.name}`, 'المنهج', 'الألحان والطقس والحروف القبطية لهذا الفصل، مع المدة والمرجع من كتب المدرسة.', '📘')}
+    ${tracks.length ? `<div class="curriculum-grid">${cards}</div>` : emptyState('📘', 'لا يوجد منهج بعد', 'سيضاف المنهج هنا قريبا.', ctx.href('/home'), 'الرئيسية')}
+  </div>`;
+}
+
 function renderRitualDetail(ctx, data, id) {
   const item = (data.liturgy || []).find((lesson) => lesson.id === id);
   if (!item) return `<div class="content-page page-enter">${emptyState('⛪', 'لم نجد هذا الدرس', 'ربما تغير الرابط أو حذف الدرس.', ctx.href('/liturgy'), 'العودة إلى الطقس')}</div>`;
@@ -364,6 +378,7 @@ function renderClassPage(ctx, route) {
   if (route.page === 'letter') return renderLetterDetail(ctx, data, route.params.get('id'));
   if (route.page === 'liturgy') return renderLiturgy(ctx, data);
   if (route.page === 'ritual') return renderRitualDetail(ctx, data, route.params.get('id'));
+  if (route.page === 'curriculum') return renderCurriculum(ctx, data);
   return emptyState('🧭', 'هذه الصفحة غير موجودة', 'لنرجع معا إلى بداية الرحلة.', ctx.href('/home'), 'العودة للرئيسية');
 }
 

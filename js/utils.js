@@ -44,6 +44,7 @@ export function sectionForPage(page = '') {
   if (page === 'hymns' || page === 'hymn') return 'hymns';
   if (page === 'coptic' || page === 'letter') return 'coptic';
   if (page === 'liturgy' || page === 'ritual') return 'liturgy';
+  if (page === 'curriculum') return 'curriculum';
   return '';
 }
 

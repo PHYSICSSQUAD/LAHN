@@ -1,17 +1,19 @@
 // The seed content lives in one place so it can later be replaced by an API.
-// Every class gets its own starter data set; the Alphabet itself is shared.
-const demoTone = 'assets/audio/demo-tone.wav';
-const youtubeSearch = (query) => `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+// Content below comes from the school curriculum PDFs (منهج مدرسة الشمامسة،
+// كتاب "الكنيسة بيتي" و"الكنيسة أمي"، ومنهج القبطي المشترك).
 
+const DRIVE_COPTIC_BOOK = 'https://drive.google.com/file/d/1f5p3_kKpJCWpRy6fuxjtkLkMlEeh23ju/view';
+const YOUTUBE_LETTERS_SONG = 'https://www.youtube.com/watch?v=WtFpaXtv3q4';
+const RECORDING = {
+  babyclass: 'assets/audio/Babyclass-1.ogg',
+  kg1: 'assets/audio/KG1-1.ogg',
+  kg2: 'assets/audio/KG2-1.mp4',
+};
+
+// Shared Coptic alphabet for all classes (منهج القبطي المشترك): the first six letters.
 const copticAlphabet = [
-  ['Ⲁ', 'Alpha', 'ألفا'], ['Ⲃ', 'Vida', 'ڤيدا'], ['Ⲅ', 'Gamma', 'جاما'], ['Ⲇ', 'Dalda', 'دالدا'],
-  ['Ⲉ', 'E', 'إي'], ['Ⲋ', 'Sou', 'سو'], ['Ⲍ', 'Zeta', 'زيتا'], ['Ⲏ', 'Eta', 'إيتا'],
-  ['Ⲑ', 'Thita', 'ثيتا'], ['Ⲓ', 'Iota', 'يوتا'], ['Ⲕ', 'Kappa', 'كابا'], ['Ⲗ', 'Laula', 'لاولا'],
-  ['Ⲙ', 'Mi', 'مي'], ['Ⲛ', 'Ni', 'ني'], ['Ⲝ', 'Ksi', 'كسي'], ['Ⲟ', 'O', 'أو'],
-  ['Ⲡ', 'Pi', 'بي'], ['Ⲣ', 'Ro', 'رو'], ['Ⲥ', 'Sima', 'سيما'], ['Ⲧ', 'Tau', 'طاو'],
-  ['Ⲩ', 'Epsi', 'إبسي'], ['Ⲫ', 'Fi', 'في'], ['Ⲭ', 'Khi', 'خي'], ['Ⲯ', 'Psi', 'بسي'],
-  ['Ⲱ', 'Oou', 'أو'], ['Ϣ', 'Shai', 'شاي'], ['Ϥ', 'Fai', 'فاي'], ['Ϧ', 'Khai', 'خاي'],
-  ['Ϩ', 'Hori', 'هوري'], ['Ϫ', 'Janja', 'جانجا'], ['Ϭ', 'Chima', 'تشيما'], ['Ϯ', 'Ti', 'تي'],
+  ['Ⲁ', 'Alpha', 'ألفا'], ['Ⲃ', 'Vita', 'بيتا'], ['Ⲅ', 'Gamma', 'غما'],
+  ['Ⲇ', 'Delta', 'دلتا'], ['Ⲉ', 'E', 'إي'], ['Ⲋ', 'Sou', 'سو'],
 ];
 
 const wordExamples = {
@@ -19,23 +21,10 @@ const wordExamples = {
   'Ⲃ': ['ⲃⲓⲃⲗⲓⲟⲛ', 'بيبليون — كتاب'],
   'Ⲇ': ['ⲇⲟⲝⲁ', 'دوكسا — المجد'],
   'Ⲉ': ['ⲉⲓⲣⲏⲛⲏ', 'إيريني — السلام'],
-  'Ⲓ': ['ⲓⲏⲥⲟⲩⲥ', 'إيسوس — يسوع'],
-  'Ⲕ': ['ⲕⲩⲣⲓⲟⲥ', 'كيريوس — الرب'],
-  'Ⲙ': ['ⲙⲁⲣⲓⲁ', 'ماريا — مريم'],
-  'Ⲛ': ['ⲛⲟⲩⲧⲉ', 'نوتي — الله'],
-  'Ⲡ': ['ⲡⲛⲉⲩⲙⲁ', 'بنيفما — الروح'],
-  'Ⲣ': ['ⲣⲱⲙⲓ', 'رومي — إنسان'],
-  'Ⲥ': ['ⲥⲟⲫⲓⲁ', 'صوفيا — الحكمة'],
-  'Ϣ': ['ϣⲏⲣⲓ', 'شيري — ابن'],
-  'Ϯ': ['ϯⲙⲉ', 'تي مي — أحب'],
 };
 
-// Number of Coptic letters each class starts with.
-const letterCounts = { babyclass: 8, kg1: 32, kg2: 16 };
-
 function buildLetters(classId) {
-  const count = letterCounts[classId] ?? 12;
-  return copticAlphabet.slice(0, count).map(([glyph, transliteration, arabicName], index) => {
+  return copticAlphabet.map(([glyph, transliteration, arabicName], index) => {
     const example = wordExamples[glyph];
     return {
       id: `${classId}-letter-${index + 1}`,
@@ -45,176 +34,172 @@ function buildLetters(classId) {
       word: example?.[0] || '',
       translation: example?.[1] || '',
       order: index + 1,
-      audioSrc: index === 0 ? demoTone : '',
-      note: index === 0 ? 'جرب كتابة الحرف في الهواء ثم على الورقة.' : '',
-      demo: true,
+      audioSrc: '',
+      note: index === 0 ? 'ردّدوا اسم الحرف مع الشكل، وجرّبوا كتابته على الورقة.' : '',
+      demo: false,
     };
   });
 }
 
+const BABY_HYMNS = [
+  {
+    id: 'babyclass-sharoubim', title: 'لحن الشاروبيم يسجدون لك', description: 'أول لحن للفصل، نرنمه بالكلمات الأولى مع الشمامسة.', icon: '🎵', order: 1,
+    lyrics: 'الشاروبيم يسجدون لك والسيرافيم يمجدونك\nصارخين قائلين: قدوس قدوس قدوس رب الصباؤوت\nالسماء والأرض مملوءتان من مجدك الأقدس',
+    notes: 'استمعوا معا أولا، ثم رددوا الكلمة الأولى «قدوس».',
+    youtubeUrl: '', audioSrc: RECORDING.babyclass, recordingSrc: '', demo: false,
+  },
+  {
+    id: 'babyclass-barakatohom', title: 'لحن بركتهم المقدسة', description: 'ترنيمة قصيرة للبركة والطلب من الرب.', icon: '🙏', order: 2,
+    lyrics: 'بركتهم المقدسة فلتكن معنا آمين.\nالمجد لك يا رب (يا رب لك المجد).\nيا رب ارحم، يا رب ارحم، يا رب باركنا\nيا رب نيّحهم آمين.',
+    notes: '', youtubeUrl: '', audioSrc: '', recordingSrc: '', demo: false,
+  },
+  {
+    id: 'babyclass-kama-kan', title: 'لحن كما كان', description: 'ترنيمة قصيرة نختم بها.', icon: '✨', order: 3,
+    lyrics: 'كما كان هكذا يكون\nإلى جيل وإلى دهر الداهرين آمين.',
+    notes: '', youtubeUrl: '', audioSrc: '', recordingSrc: '', demo: false,
+  },
+];
+
+const KG_HYMNS = [
+  {
+    id: 'kg-gospel-kiahk', title: 'مرد إنجيل الأحد الأول والثاني من شهر كيهك', description: 'أول لحن للفصل، مرد الإنجيل بالكلمات الأولى.', icon: '🎵', order: 1,
+    lyrics: 'نعطيك السلام: مع غبريال الملاك\nقائلين: السلام لك يا ممتلئة نعمة: الرب معك\nمن أجل هذا نمجدك: كوالدة الإله كل حين\nإسألي الرب عنا ليغفر لنا خطايانا',
+    notes: 'استمعوا معا ثم رددوا الكلمات الأولى.',
+    youtubeUrl: '', audioSrc: '', recordingSrc: '', demo: false,
+  },
+  {
+    id: 'kg-closing-prayers', title: 'مرد ختام الصلوات', description: 'نرددها عند ختام الصلوات.', icon: '🕊️', order: 2,
+    lyrics: 'آمين هللويا: المجد للآب والابن والروح القدس\nالآن وكل أوان وإلى دهر الداهرين آمين\nنصرخ قائلين: ربنا يسوع المسيح',
+    notes: '', youtubeUrl: '', audioSrc: '', recordingSrc: '', demo: false,
+  },
+  {
+    id: 'kg-bless-creation', title: 'لحن بارك (أيام السنة)', description: 'بركة الخليقة حسب أيام النيل والزراعة والأثمار.', icon: '🌾', order: 3,
+    lyrics: 'بارك أيام النيل من 12 بؤونه إلى 9 بابة\nبارك مياه الأنهار (أيام الزراعة 10 بابه إلى 10 طوبه)\nبارك الزروع والعشب (أيام الأثمار 11 طوبه إلى 11 بؤونه)\nبارك أهوية السماء\nفلتكن رحمتك وسلامك حصنا لشعبك',
+    notes: '', youtubeUrl: '', audioSrc: '', recordingSrc: '', demo: false,
+  },
+];
+
+const BABY_LITURGY = [
+  {
+    id: 'babyclass-church-home', title: 'الكنيسة بيتي', description: 'بيت الله أبي السماوي، وأسرتي الكبيرة.', icon: '⛪', order: 1,
+    body: 'الكنيسة هي بيت الله أبي السماوي.\n\nوهي بيت الملائكة والقديسين، فيها نصلي ونرنم ونتعلم.\n\nالكنيسة هي البيت اللي بيضمنا كلنا، وأنا وكل إخوتي دي أسرتي الكبيرة.',
+    notes: 'اسألوا الطفل: إيه اللي بنعمله في الكنيسة؟', youtubeUrl: '', audioSrc: '', demo: false,
+  },
+  {
+    id: 'babyclass-way-to-church', title: 'في طريقي إلى الكنيسة', description: 'أفرح وأنا ماشي للكنيسة.', icon: '🚶', order: 2,
+    body: 'أنا أذهب للكنيسة فرحان، كما تطير الحمامة إلى عشها.\n\nوأنا أرتل قائلا: «ما أحلى مساكنك يا رب الجنود».\n\nوأقول: «فرحت بالقائلين لي: إلى بيت الرب نذهب».',
+    notes: 'ردّدوا الجملة معا وأنتم ماشيين.', youtubeUrl: '', audioSrc: '', demo: false,
+  },
+  {
+    id: 'babyclass-greet-father', title: 'أركع وأسلم على أبي الكاهن', description: 'أركع عند باب الهيكل، وأحب أبي الكاهن.', icon: '🙇', order: 3,
+    body: 'أركع على باب الهيكل وأصلي «أبانا الذي...».\n\nوبعد كده أسلم على أبي الكاهن، فأنا أحب أبي الكاهن وأقبل إيده.\n\nهو يرشدني ويعلمني، وأنا أسمع كلامه.',
+    notes: '', youtubeUrl: '', audioSrc: '', demo: false,
+  },
+  {
+    id: 'babyclass-sign-cross', title: 'علامة الصليب عند دخول الكنيسة', description: 'أول ما أدخل الكنيسة أرسم الصليب.', icon: '✝️', order: 4,
+    body: 'قبل ما أسلم على أي حد، أسلم على صاحب البيت الكبير، الله.\n\nفأول ما أدخل الكنيسة أرسم الصليب:\nباسم الآب، والابن، والروح القدس، الإله الواحد، آمين.',
+    notes: 'ساعدوا الطفل يرسم الصليب بيده في البداية.', youtubeUrl: '', audioSrc: '', demo: false,
+  },
+];
+
+const KG_LITURGY = [
+  {
+    id: 'kg-baptism', title: 'المعمودية', description: 'الكنيسة أمي: تلدني من المعمودية.', icon: '💧', order: 1,
+    body: 'الكنيسة هي أمي، وهي اللي ولدتني من المعمودية.\n\nقال الرب: «عمدوهم باسم الآب والابن والروح القدس» (متى 28: 19).\n\nالمعمودية تكون بالغطس في الماء ثلاث مرات، زي ما يسوع كان مدفون.\n\nنردد معا: «كنيستي ولدتني، ما خرجت من المعمودية، وبقى ربنا أبويا والكنيسة أمي».',
+    notes: 'الآية: «عمدوهم باسم الآب والابن والروح القدس».', youtubeUrl: '', audioSrc: '', demo: false,
+  },
+  {
+    id: 'kg-chrism', title: 'الميرون', description: 'سر الميرون والروح القدس.', icon: '🕯️', order: 2,
+    body: 'الكنيسة بترشمني بالميرون، 36 شمة في جسمي، عشان الشيطان ما يغلبنيش.\n\nقال الرب: «أقبلوا الروح القدس» (يوحنا 20: 22).\n\nماما بتحميني وبتطعمني عشان الأمراض الوحشة ما تموتنيش، وروح ربنا يحفظ ويصون.',
+    notes: 'الآية: «أقبلوا الروح القدس».', youtubeUrl: '', audioSrc: '', demo: false,
+  },
+  {
+    id: 'kg-repentance', title: 'التوبة والاعتراف', description: 'الكنيسة تنضفني من الخطية.', icon: '🙏', order: 3,
+    body: 'كنيستي بتنضفني من الخطية، عشان قلبي يبقى أبيض زي الملايكة.\n\nماما بتنضفني من كل حاجة وحشة، عشان صحتي تبقى حلوة.\n\nقال الابن الضال: «يا أبي أخطأت إلى السماء وقدامك» (لوقا 15: 18).\n\nأروح لأبونا بعدما أتوب، وأقوله على كل التوب، عشان يبقى نضيف.',
+    notes: 'الآية: «يا أبي أخطأت إلى السماء وقدامك».', youtubeUrl: '', audioSrc: '', demo: false,
+  },
+];
+
+const hymnTitles = (list) => list.map((item) => item.title);
+const copticPoints = copticAlphabet.map(([glyph, , arabic]) => `${glyph} ${arabic}`);
+const copticLinks = [
+  { label: 'كتاب الحروف القبطية (Drive)', url: DRIVE_COPTIC_BOOK },
+  { label: 'ترنيمة الحروف (يوتيوب)', url: YOUTUBE_LETTERS_SONG },
+];
+
+const BABY_CURRICULUM = [
+  {
+    id: 'babyclass-curr-hymns', title: 'الألحان', icon: '🎵', duration: '',
+    goal: 'ترديد ثلاثة ألحان قصيرة مع الكلمات الأساسية.',
+    points: hymnTitles(BABY_HYMNS),
+    reference: 'منهج الألحان — مرحلة بيبي كلاس', links: [],
+  },
+  {
+    id: 'babyclass-curr-liturgy', title: 'الطقس: الكنيسة بيتي', icon: '⛪', duration: '3 حصص',
+    goal: 'أن يعرف الطفل إيه هي الكنيسة، وإيه اللي بيعمله فيها، وإزاي يدخلها.',
+    points: hymnTitles(BABY_LITURGY),
+    reference: 'كتاب الكنيسة بيتي — منهج كنيسة العذراء والقديس أثناسيوس، صفحات 5 إلى 8', links: [],
+  },
+  {
+    id: 'babyclass-curr-coptic', title: 'القبطي: الحروف الأولى', icon: 'Ⲁ', duration: '3 حصص',
+    goal: 'حفظ ترتيب الحروف القبطية (أول 4 أبيات)، والتعرف على أشكال أول 6 حروف وكيفية كتابتها بدون قواعد.',
+    points: copticPoints,
+    reference: 'منهج القبطي المشترك، صفحات 5 إلى 8', links: copticLinks,
+  },
+];
+
+const KG_CURRICULUM = [
+  {
+    id: 'kg-curr-hymns', title: 'الألحان', icon: '🎵', duration: '',
+    goal: 'ترديد المردات الأساسية في الكنيسة مع الكلمات.',
+    points: hymnTitles(KG_HYMNS),
+    reference: 'منهج الألحان — من شهر كيهك وختام الصلوات', links: [],
+  },
+  {
+    id: 'kg-curr-liturgy', title: 'الطقس: الكنيسة أمي', icon: '⛪', duration: '3 حصص',
+    goal: 'التعرف على أسرار المعمودية والميرون والتوبة والاعتراف، وحفظ آية لكل سر.',
+    points: hymnTitles(KG_LITURGY),
+    reference: 'كتاب الكنيسة أمي — منهج كنيسة العذراء والقديس أثناسيوس، صفحات 6 إلى 9', links: [],
+  },
+  {
+    id: 'kg-curr-coptic', title: 'القبطي: الحروف الأولى', icon: 'Ⲁ', duration: '3 حصص',
+    goal: 'حفظ ترتيب الحروف القبطية (أول 4 أبيات)، والتعرف على أشكال أول 6 حروف وكيفية كتابتها بدون قواعد.',
+    points: copticPoints,
+    reference: 'منهج القبطي المشترك، صفحات 5 إلى 8', links: copticLinks,
+  },
+];
+
 const seeds = {
   babyclass: {
     students: [],
-    hymns: [
-      {
-        id: 'babyclass-kyrie', title: 'كيرياليسون الصغير', description: 'نغمة قصيرة جدا نرددها مع الدبدوب.', icon: '🍼', order: 1,
-        lyrics: 'كيرياليسون، كيرياليسون\nيا رب ارحمنا.',
-        notes: 'يكفي أن يردد الطفل كلمة واحدة مع أحد والديه.',
-        youtubeUrl: youtubeSearch('كيرياليسون للأطفال قبطي'), audioSrc: demoTone, recordingSrc: demoTone, demo: true,
-      },
-      {
-        id: 'babyclass-mary', title: 'سلامنا لمريم', description: 'نحيي العذراء بكلمات بسيطة.', icon: '🌷', order: 2,
-        lyrics: 'سلام لك يا مريم\nيا أم النور.',
-        notes: 'استبدلوا النص بالصيغة المعتمدة في كنيستكم.',
-        youtubeUrl: youtubeSearch('سلام لك يا مريم قبطي'), audioSrc: '', recordingSrc: '', demo: true,
-      },
-      {
-        id: 'babyclass-angel', title: 'لحن الملاك', description: 'لحن هادئ نسمعه قبل النوم.', icon: '😇', order: 3,
-        lyrics: 'الملاك يسبح\nويعلمنا الفرح.',
-        notes: 'يمكن تشغيله وقت الهدوء.',
-        youtubeUrl: youtubeSearch('ترانيم الملائكة للأطفال'), audioSrc: '', recordingSrc: '', demo: true,
-      },
-    ],
-    liturgy: [
-      {
-        id: 'babyclass-church-home', title: 'زيارتنا للكنيسة', description: 'نتعرف على بيت الله بهدوء.', icon: '⛪', order: 1,
-        body: 'الكنيسة بيت الله وبيتنا الجميل.\n\nندخل بهدوء، ونسلم على الأيقونات، ونجلس مع ماما وبابا.\n\nاسأل طفلك: هل تحب أن تدق الناقوس؟',
-        notes: 'شرح مبسط جدا لعمر ما قبل المدرسة.', youtubeUrl: youtubeSearch('أدب الكنيسة للأطفال'), audioSrc: demoTone, demo: true,
-      },
-      {
-        id: 'babyclass-cross', title: 'علامة الصليب الصغيرة', description: 'نرسم الصليب مع ماما وبابا.', icon: '✝️', order: 2,
-        body: 'نرسم علامة الصليب بيدنا بهدوء ومحبة.\n\nنقول: بسم الآب والابن وروح القدس.',
-        notes: 'ساعدوا الطفل بيده في البداية.', youtubeUrl: youtubeSearch('علامة الصليب للأطفال'), audioSrc: '', demo: true,
-      },
-      {
-        id: 'babyclass-quiet', title: 'نصغي بهدوء', description: 'نتعلم أن نهدأ قليلا في الصلاة.', icon: '🕊️', order: 3,
-        body: 'نضع يدنا على قلبنا ونسمع صوت الصلاة.\n\nنهدأ قليلا، ثم نبتسم.',
-        notes: 'نشاط قصير لا يزيد عن دقيقة لعمر البيبي.', youtubeUrl: '', audioSrc: '', demo: true,
-      },
-    ],
+    hymns: BABY_HYMNS,
+    liturgy: BABY_LITURGY,
+    curriculum: BABY_CURRICULUM,
     settings: {
-      copticSourceUrl: youtubeSearch('حروف قبطية للأطفال سن ٤ سنوات'),
-      parentNote: 'فصل البيبي: نغمة واحدة قصيرة كل أسبوع، ومعها لعبة أو رسمة، وبس!',
+      copticSourceUrl: DRIVE_COPTIC_BOOK,
+      parentNote: 'فصل البيبي: لحن واحد كل أسبوع، وكلمة من الحكاية، وبعدها لعبة أو رسمة.',
     },
   },
-
   kg1: {
     students: [],
-    hymns: [
-      {
-        id: 'kg1-kyrie-eleison', title: 'لحن كيرياليسون', description: 'ترنيمة قصيرة نطلب فيها الرحمة بفرح.', icon: '🎵', order: 1,
-        lyrics: 'كيرياليسون، كيرياليسون\nيا رب ارحمنا، يا رب ارحمنا\nنسبحك بمحبة وسلام.',
-        notes: 'كلمة «كيرياليسون» تعني «يا رب ارحم». يمكن أن يردد الطفل الكلمات مع أحد والديه.',
-        youtubeUrl: youtubeSearch('لحن كيرياليسون قبطي للأطفال'),
-        audioSrc: demoTone, recordingSrc: demoTone, demo: true,
-      },
-      {
-        id: 'kg1-gospel-response', title: 'مرد الإنجيل', description: 'نستمع ونجيب بمحبة في الكنيسة.', icon: '📖', order: 2,
-        lyrics: 'المجد لك يا رب\nالمجد لك يا رب\nيا ربنا وإلهنا وملكنا.',
-        notes: 'هذا النص للتعرف على شكل الدرس فقط. استبدله بالنص والتسجيل المعتمدين من الكنيسة.',
-        youtubeUrl: youtubeSearch('مرد الإنجيل قبطي'), audioSrc: demoTone, recordingSrc: '', demo: true,
-      },
-      {
-        id: 'kg1-blessing-hymn', title: 'لحن البركة', description: 'لحن هادئ نتعلمه مع الأسرة.', icon: '✨', order: 3,
-        lyrics: 'بارك يا رب يومنا\nواجعل قلوبنا مليئة بالسلام.',
-        notes: 'مساحة لطيفة لملاحظة من المعلم أو ولي الأمر.',
-        youtubeUrl: youtubeSearch('لحن البركة قبطي'), audioSrc: demoTone, recordingSrc: '', demo: true,
-      },
-      {
-        id: 'kg1-alleluia', title: 'لحن هلليلويا', description: 'نرنم بكلمة فرح وتسبيح.', icon: '🌈', order: 4,
-        lyrics: 'هلليلويا، هلليلويا\nنسبح اسمك يا الله.',
-        notes: 'هلليلويا كلمة تسبيح وفرح. أضف هنا الكلمات الصحيحة والتسجيل الخاص بكم.',
-        youtubeUrl: youtubeSearch('لحن هلليلويا قبطي'), audioSrc: '', recordingSrc: '', demo: true,
-      },
-    ],
-    liturgy: [
-      {
-        id: 'kg1-church-home', title: 'بيتي الجميل: الكنيسة', description: 'نتعرف على بيت الصلاة وماذا نرى فيه.', icon: '⛪', order: 1,
-        body: 'الكنيسة بيت الصلاة والاجتماع بمحبة.\n\nنرى فيها المذبح، والأيقونات، والشموع. نسير بهدوء ونصغي إلى الصلوات والترانيم.\n\nاسأل طفلك: ما الشيء الذي تحب أن تراه في الكنيسة؟',
-        notes: 'تفسير مبسط للتعلم الأسري، ويفضل مراجعته مع خادم أو معلم الكنيسة.',
-        youtubeUrl: youtubeSearch('شرح الكنيسة للأطفال قبطي'), audioSrc: demoTone, demo: true,
-      },
-      {
-        id: 'kg1-the-cross', title: 'علامة الصليب', description: 'نتعلم أن الصليب يذكرنا بمحبة الله.', icon: '✝️', order: 2,
-        body: 'الصليب علامة محبة ورجاء. نرسمه باحترام ونبدأ صلاتنا به.\n\nيمكن للأهل أن يشرحوا للطفل خطوات رسم علامة الصليب بهدوء وبطريقة تناسب عمره.',
-        notes: 'المحتوى مثال توضيحي أولي قابل للتعديل.', youtubeUrl: youtubeSearch('علامة الصليب للأطفال قبطي'), audioSrc: '', demo: true,
-      },
-      {
-        id: 'kg1-incense', title: 'رائحة البخور', description: 'نلاحظ البخور الجميل الذي يرافق الصلاة.', icon: '☁️', order: 3,
-        body: 'يرتفع البخور في الكنيسة أثناء الصلاة، وتذكرنا رائحته أن نرفع قلوبنا بمحبة.\n\nنقف بهدوء، ونصغي، ونتبع إرشادات الكبار.',
-        notes: 'شرح عائلي مبسط؛ لا تلمس المبخرة أو الشموع من دون إشراف شخص بالغ.',
-        youtubeUrl: youtubeSearch('البخور في الكنيسة للأطفال'), audioSrc: '', demo: true,
-      },
-      {
-        id: 'kg1-liturgy-listening', title: 'أصغي وأشارك', description: 'كيف نستعد للصلاة ونشارك باحترام؟', icon: '🕊️', order: 4,
-        body: 'قبل الصلاة، نهدأ ونستعد. أثناءها نصغي إلى الكلمات ونشارك في الردود التي تعلمناها.\n\nبعدها نتذكر كلمة جميلة أو ترنيمة أحببناها.',
-        notes: 'يمكن إضافة أقسام وصور وتسجيلات خاصة بكنيستكم من لوحة الإدارة.',
-        youtubeUrl: youtubeSearch('طقس الكنيسة للأطفال قبطي'), audioSrc: '', demo: true,
-      },
-    ],
+    // First hymn of KG1 carries the school recording.
+    hymns: KG_HYMNS.map((item, index) => (index === 0 ? { ...item, audioSrc: RECORDING.kg1 } : item)),
+    liturgy: KG_LITURGY,
+    curriculum: KG_CURRICULUM,
     settings: {
-      copticSourceUrl: youtubeSearch('تعليم الحروف القبطية للأطفال'),
-      parentNote: 'اختاروا محطة، واستمتعوا بها معا. الأمثلة الحالية تجريبية ويمكنكم تعديلها من لوحة الإدارة.',
+      copticSourceUrl: DRIVE_COPTIC_BOOK,
+      parentNote: 'اختاروا محطة، واستمتعوا بها معا.',
     },
   },
-
   kg2: {
     students: [],
-    hymns: [
-      {
-        id: 'kg2-kirialison', title: 'كيرياليسون الكبير', description: 'نرددها جماعة بصوت واحد في الكنيسة.', icon: '🎶', order: 1,
-        lyrics: 'كيرياليسون، كيرياليسون\nكيرياليسون، يا رب ارحمنا.',
-        notes: 'تدريب على ترديد اللحن جماعة وبإيقاع واحد.',
-        youtubeUrl: youtubeSearch('كيرياليسون قبطي'), audioSrc: demoTone, recordingSrc: demoTone, demo: true,
-      },
-      {
-        id: 'kg2-agios', title: 'لحن أجيوس', description: 'تسبحة قدوس قدوس قدوس.', icon: '✨', order: 2,
-        lyrics: 'أجيوس، أجيوس، أجيوس\nقدوس، قدوس، قدوس.',
-        notes: 'اشرحوا للطفل أننا ننضم لصوت الملائكة.',
-        youtubeUrl: youtubeSearch('أجيوس قبطي'), audioSrc: demoTone, recordingSrc: '', demo: true,
-      },
-      {
-        id: 'kg2-gospel-response', title: 'مرد الإنجيل', description: 'نجيب على الإنجيل بمحبة وثبات.', icon: '📖', order: 3,
-        lyrics: 'المجد لك يا رب\nالمجد لك يا رب',
-        notes: 'استبدلوا النص بالصيغة المعتمدة في كنيستكم.',
-        youtubeUrl: youtubeSearch('مرد الإنجيل قبطي'), audioSrc: '', recordingSrc: '', demo: true,
-      },
-      {
-        id: 'kg2-alleluia', title: 'هلليلويا', description: 'فرح التسبيح في نهاية الصلاة.', icon: '🌈', order: 4,
-        lyrics: 'هلليلويا، هلليلويا\nهلليلويا، يا ربنا.',
-        notes: 'يمكن تسجيل صوت الفصل وإضافته هنا.',
-        youtubeUrl: youtubeSearch('هلليلويا قبطي'), audioSrc: '', recordingSrc: '', demo: true,
-      },
-    ],
-    liturgy: [
-      {
-        id: 'kg2-reading-gospel', title: 'القراءة والإنجيل', description: 'نستمع إلى القراءة ونقف باحترام.', icon: '📜', order: 1,
-        body: 'في الكنيسة نسمع القراءات من الكتاب المقدس، ثم يقف الجميع للإنجيل.\n\nنصغي، ونرسم علامة الصليب، ونردد المرد الذي تعلمناه.',
-        notes: 'أضيفوا أسماء القراءات التي اعتاد عليها الفصل.',
-        youtubeUrl: youtubeSearch('القراءات القبطية للأطفال'), audioSrc: demoTone, demo: true,
-      },
-      {
-        id: 'kg2-incense', title: 'رفع البخور', description: 'معنى رائحة البخور في الصلاة.', icon: '☁️', order: 2,
-        body: 'البخور يذكرنا بالصلاة التي ترتفع إلى الله.\n\nنقف بهدوء، ولا نتحرك أثناء رفع البخور، ونتبع إرشادات الخادم.',
-        notes: 'يشرح الخادم خطوات رفع البخور أمام الأطفال.',
-        youtubeUrl: youtubeSearch('رفع البخور قبطي'), audioSrc: '', demo: true,
-      },
-      {
-        id: 'kg2-communion', title: 'التحضير للتناول', description: 'كيف نستعد للأسرار المقدسة؟', icon: '🍞', order: 3,
-        body: 'نستعد للأسرار بالصلاة والاعتراف والمحبة.\n\nنجلس في هدوء، ونصلي الصلاة التي تعلمناها، ونطيع والدينا.',
-        notes: 'هذا شرح عائلي فقط، والتفاصيل النهائية من كاهن الكنيسة.',
-        youtubeUrl: youtubeSearch('التحضير للتناول للأطفال'), audioSrc: '', demo: true,
-      },
-      {
-        id: 'kg2-agpeya', title: 'صلاة الأجبية', description: 'نتعلم نصلي كل يوم.', icon: '📿', order: 4,
-        body: 'في الأجبية صلوات لكل ساعة من اليوم.\n\nنختار ساعة واحدة ونصليها كل يوم بهدوء.',
-        notes: 'اطلبوا من الطفل أن يختار الوقت الذي يناسبه.',
-        youtubeUrl: youtubeSearch('الأجبية للأطفال'), audioSrc: '', demo: true,
-      },
-    ],
+    // First hymn of KG2 carries the school recording.
+    hymns: KG_HYMNS.map((item, index) => (index === 0 ? { ...item, audioSrc: RECORDING.kg2 } : item)),
+    liturgy: KG_LITURGY,
+    curriculum: KG_CURRICULUM,
     settings: {
-      copticSourceUrl: youtubeSearch('تعليم الحروف القبطية للأطفال'),
-      parentNote: 'فصل KG2: لحن أو درس كامل كل أسبوع، مع مراجعة الحروف القبطية من لوحة الحروف.',
+      copticSourceUrl: DRIVE_COPTIC_BOOK,
+      parentNote: 'اختاروا محطة، واستمتعوا بها معا.',
     },
   },
 };
