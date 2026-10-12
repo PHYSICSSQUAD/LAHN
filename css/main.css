@@ -765,6 +765,9 @@ html[data-class] ::selection { background: var(--green-soft); }
 .source-copy strong { color: #3f4e47; font-size: 13.5px; font-weight: 800; overflow-wrap: anywhere; }
 .source-copy small { color: #94a099; font-size: 10.5px; font-weight: 800; }
 .source-item .external-mark { margin-inline-start: auto; color: #9fada5; }
+/* المصدر الأول المميز (وسم صريح في بيانات المصدر). */
+.source-item.source-badged a { border-color: var(--green); background: #f6fbf8; }
+.source-item.source-badged .source-copy small { color: var(--green-dark); }
 .source-youtube .source-mark { background: #ffeceb; }
 .source-drive .source-mark { background: #eaf1fb; }
 .source-pdf .source-mark { background: #fff4e2; }
