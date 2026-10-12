@@ -87,7 +87,10 @@ export function sourceList(sources = [], className = 'source-list') {
     const kind = linkKind(source.href);
     const meta = KIND_META[kind] || KIND_META.site;
     const external = !source.href.startsWith('assets/');
-    return `<li class="source-item source-${kind}"><a href="${escapeHTML(source.href)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}><span class="source-mark" aria-hidden="true">${meta.icon}</span><span class="source-copy"><strong>${escapeHTML(source.label || meta.label)}</strong><small>${escapeHTML(meta.label)}</small></span><span class="external-mark" aria-hidden="true">↗</span></a></li>`;
+    // An optional "badge" (e.g. المصدر الأول) replaces the plain kind label.
+    const badge = String(source.badge || '').trim();
+    const note = badge || meta.label;
+    return `<li class="source-item source-${kind}${badge ? ' source-badged' : ''}"><a href="${escapeHTML(source.href)}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}><span class="source-mark" aria-hidden="true">${meta.icon}</span><span class="source-copy"><strong>${escapeHTML(source.label || meta.label)}</strong><small>${escapeHTML(note)}</small></span><span class="external-mark" aria-hidden="true">↗</span></a></li>`;
   }).join('')}</ul>`;
 }
 
