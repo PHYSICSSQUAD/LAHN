@@ -44,9 +44,9 @@ const SOURCE = Object.freeze({
 
 // تسجيلات المدرسة للحن الأول في كل فصل.
 const RECORDING = {
-  babyclass: 'assets/audio/Babyclass-1.ogg',
-  kg1: 'assets/audio/KG1-1.ogg',
-  kg2: 'assets/audio/KG2-1.mp4',
+  babyclass: 'assets/Babyclass-1.ogg',
+  kg1: 'assets/KG-1.ogg',
+  kg2: 'assets/KG-2.mp4',
 };
 
 // Shared Coptic alphabet for all classes (منهج القبطي المشترك): the first six letters.
