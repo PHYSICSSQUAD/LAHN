@@ -3,6 +3,9 @@
 // وكتابي «الكنيسة بيتي» و«الكنيسة أمي»، ومنهج القبطي المشترك.
 // كلمات الألحان (عربي + قبطي معرب) ومصادرها موثقة بالروابط أسفل كل لحن،
 // مع رابط لنفس اللحن بصوت المعلم إبراهيم عياد.
+// ومن المصادر الموثقة أيضا: ترنيمة السمكة «تبتي» لكل حروف القبطي،
+// ترنيمتا أسرار الكنيسة (واحد اتنين تلاتة، وأسرار الكنيسة السبعة) لكل دروس الطقس،
+// كارتون شرح سر المعمودية للأطفال، والمرد العربي للحن الأول في بيبي كلاس.
 
 // ---------------------------------------------------------------------------
 // مصادر المنهج الرسمية (نفس الروابط الموجودة داخل ملفات المنهج)
@@ -15,8 +18,20 @@ const SOURCE = Object.freeze({
   copticBookDrive: 'https://drive.google.com/file/d/1f5p3_kKpJCWpRy6fuxjtkLkMlEeh23ju/view',
   babyRitualDrive: 'https://drive.google.com/file/d/18tVBLhrULDsZzWFuembEzpE35DAnw2sM/view',
   kgRitualDrive: 'https://drive.google.com/file/d/1ezKSDFU839t-GKpvxHH2V3XeEiIjqaxY/view',
+  // ترنيمة الحروف القبطية (المصدر الرسمي داخل ملف المنهج).
   lettersSong: 'https://www.youtube.com/watch?v=WtFpaXtv3q4',
+  // ترنيمة السمكة «تبتي» لتعليم الأبجدية القبطية — مصدر لكل الحروف القبطية.
+  tebtyFishSong: 'https://www.youtube.com/watch?v=vq_IgNDlivk',
+  // ترنيمة أسرار الكنيسة: واحد اتنين تلاتة أربعة — مصدر لكل دروس الأسرار.
   sacramentsSong: 'https://www.youtube.com/watch?v=i0jW-fVDQQs',
+  // ترنيمة أسرار الكنيسة السبعة (كورال هوس إيروف — قناة كوجي للأطفال) — في كل دروس الطقس.
+  sacramentsSongSeven: 'https://www.youtube.com/watch?v=EhAClli4-Hw',
+  // كارتون «عمو سانتو وماركو في مدينة الأسرار» — شرح سر المعمودية للأطفال بإشراف أبونا داود لمعي.
+  baptismCartoon: 'https://www.youtube.com/watch?v=MIRWg7i0cWQ',
+  // مرد الشاروبيم يسجدون لك بالعربية — خوروس الكلية الإكليريكية بقيادة المعلم إبراهيم عياد.
+  sharoubimMardArabic: 'https://www.youtube.com/watch?v=G9vBMJnWmiQ',
+  // لحن الشاروبيم يسجدون لك بالعربي (من مردات الشعب في القداس) — المعلم يونان صفوت.
+  sharoubimArabicYounan: 'https://www.youtube.com/watch?v=J9G9U5jy2T0',
 });
 
 // تسجيلات المدرسة للحن الأول في كل فصل.
@@ -39,9 +54,11 @@ const wordExamples = {
   'Ⲉ': ['ⲉⲓⲣⲏⲛⲏ', 'إيريني — السلام'],
 };
 
+// نفس المصادر لكل حروف القبطي، ومعها ترنيمة السمكة «تبتي» للأبجدية القبطية.
 const COPTIC_SOURCES = [
   { label: 'كتاب الحروف القبطية (Google Drive)', url: SOURCE.copticBookDrive },
   { label: 'ترنيمة الحروف القبطية (يوتيوب)', url: SOURCE.lettersSong },
+  { label: 'ترنيمة السمكة «تبتي» لتعليم الحروف القبطية (يوتيوب)', url: SOURCE.tebtyFishSong },
   { label: 'منهج القبطي المشترك (PDF)', url: SOURCE.copticCurriculumPdf },
 ];
 
@@ -78,13 +95,15 @@ const BABY_HYMNS = [
     order: 1,
     lyricsArabic: 'الشاروبيم يسجدون لك: والسيرافيم يمجدونك\nصارخين قائلين: قدوس قدوس قدوس رب الصباؤوت\nالسماء والأرض مملوءتان: من مجدك الأقدس',
     lyricsCoptic: 'ني شيروبيم سى أوأوشت إمموك: نيم ني سيرافيم سى تي أوأوو ناك\nإفؤش إيفول إفجو إمموس: جى أجيوس أجيوس أجيوس كيريوس صاباؤوت\nبليريس أورانوس كى إي جي: تيس أجياس سو ذوكسيس',
-    notes: 'استمعوا معا أولا، ثم رددوا الكلمة الأولى «قدوس».',
+    notes: 'استمعوا معا أولا، ثم رددوا الكلمة الأولى «قدوس». اللحن يُقال بالعربي أو بالقبطي، والمرد العربي في المصادر يساعد الأطفال على الحفظ لأنهم يحفظونه بالعربية.',
     audioSrc: RECORDING.babyclass,
     ayad: {
       label: 'لحن ني شيروبيم — المعلم إبراهيم عياد',
       url: 'https://www.youtube.com/watch?v=qgGU88NijBc',
     },
     sources: [
+      { label: 'مرد الشاروبيم يسجدون لك بالعربية — خوروس الكلية الإكليريكية بقيادة المعلم إبراهيم عياد (يوتيوب)', url: SOURCE.sharoubimMardArabic },
+      { label: 'لحن الشاروبيم يسجدون لك بالعربي من مردات الشعب في القداس — المعلم يونان صفوت (يوتيوب)', url: SOURCE.sharoubimArabicYounan },
       { label: 'كلمات اللحن (عربي وقبطي معرب) — مدرسة الشمامسة', url: 'https://madraset-elshamamsa.com/al7an/php/Odas/AlSharobimYasgodon.php' },
       { label: 'منهج مدرسة الشمامسة — مرحلة بيبي كلاس (PDF)', url: SOURCE.curriculumPdf },
     ],
@@ -206,10 +225,19 @@ const BABY_RITUAL_SOURCES = [
   { label: 'نسخة الطقس داخل الموقع (PDF)', url: SOURCE.babyRitualPdf },
 ];
 
+// مصادر دروس الطقس في KG1 و KG2: نفس القائمة لكل الأسرار،
+// ومعها ترنيمتا أسرار الكنيسة (واحد اتنين تلاتة أربعة، وأسرار الكنيسة السبعة).
 const KG_RITUAL_SOURCES = [
   { label: 'كتاب «الكنيسة أمي» — منهج كنيسة العذراء والأنبا أثناسيوس (Google Drive)', url: SOURCE.kgRitualDrive },
   { label: 'ترنيمة أسرار الكنيسة: واحد اتنين تلاتة أربعة (يوتيوب)', url: SOURCE.sacramentsSong },
+  { label: 'ترنيمة أسرار الكنيسة السبعة — كورال هوس إيروف وقناة كوجي للأطفال (يوتيوب)', url: SOURCE.sacramentsSongSeven },
   { label: 'نسخة الطقس داخل الموقع (PDF)', url: SOURCE.kgRitualPdf },
+];
+
+// درس المعمودية وحده يضيف كارتون الشرح المبسط للأطفال.
+const KG_BAPTISM_SOURCES = [
+  { label: 'كارتون شرح سر المعمودية للأطفال — «عمو سانتو وماركو في مدينة الأسرار» بإشراف أبونا داود لمعي (يوتيوب)', url: SOURCE.baptismCartoon },
+  ...KG_RITUAL_SOURCES,
 ];
 
 const BABY_LITURGY = [
@@ -239,12 +267,12 @@ const KG_LITURGY = [
   {
     id: 'kg-baptism', title: 'المعمودية', description: 'الكنيسة أمي: تلدني من المعمودية.', icon: '💧', order: 1,
     body: 'الكنيسة هي أمي، وهي اللي ولدتني من المعمودية.\n\nقال الرب: «عمدوهم باسم الآب والابن والروح القدس» (متى 28: 19).\n\nالمعمودية تكون بالغطس في الماء ثلاث مرات، زي ما يسوع كان مدفون.\n\nنردد معا: «كنيستي ولدتني، ما خرجت من المعمودية، وبقى ربنا أبويا والكنيسة أمي».',
-    notes: 'الآية: «عمدوهم باسم الآب والابن والروح القدس».', audioSrc: '', sources: KG_RITUAL_SOURCES,
+    notes: 'الآية: «عمدوهم باسم الآب والابن والروح القدس». وشاهدوا معا كارتون الشرح في المصادر.', audioSrc: '', sources: KG_BAPTISM_SOURCES,
   },
   {
     id: 'kg-chrism', title: 'الميرون', description: 'سر الميرون والروح القدس.', icon: '🕯️', order: 2,
     body: 'الكنيسة بترشمني بالميرون، 36 شمة في جسمي، عشان الشيطان ما يغلبنيش.\n\nقال الرب: «أقبلوا الروح القدس» (يوحنا 20: 22).\n\nماما بتحميني وبتطعمني عشان الأمراض الوحشة ما تموتنيش، وروح ربنا يحفظ ويصون.',
-    notes: 'الآية: «أقبلوا الروح القدس».', audioSrc: '', sources: KG_RITUAL_SOURCES,
+    notes: 'الآية: «أقبلوا الروح القدس». واسمعوا بيت الميرون من ترنيمة أسرار الكنيسة في المصادر.', audioSrc: '', sources: KG_RITUAL_SOURCES,
   },
   {
     id: 'kg-repentance', title: 'التوبة والاعتراف', description: 'الكنيسة تنضفني من الخطية.', icon: '🙏', order: 3,
